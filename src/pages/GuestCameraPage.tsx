@@ -1,3 +1,4 @@
+// src/pages/GuestCameraPage.tsx
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useCamera } from '../shared/hooks/useCamera';
@@ -12,11 +13,12 @@ export const GuestCameraPage = () => {
   localStorage.setItem('guestId', guestId);
 
   const [filterName, setFilterName] = useState<string>('warm');
+  const [cameraStarted, setCameraStarted] = useState(false);
   const { videoRef, requestPermission, takePhoto, error: cameraError } = useCamera();
   const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
   const { handleCapture, remaining, loading, isLimitReached } = useGuestUpload(eventId!, guestId);
 
-  // Загружаем событие, чтобы узнать выбранный организатором фильтр
+  // Загружаем фильтр события
   useEffect(() => {
     const loadEvent = async () => {
       if (eventId) {
@@ -25,8 +27,12 @@ export const GuestCameraPage = () => {
       }
     };
     loadEvent();
-    requestPermission();
-  }, [eventId, requestPermission]);
+  }, [eventId]);
+
+  const startCamera = async () => {
+    const success = await requestPermission();
+    if (success) setCameraStarted(true);
+  };
 
   const onCapture = async () => {
     if (isLimitReached) {
@@ -43,8 +49,27 @@ export const GuestCameraPage = () => {
     }
   };
 
+  // Если камера ещё не запущена – показываем кнопку включения
+  if (!cameraStarted && !cameraError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
+        <Button onClick={startCamera} className="px-6 py-3 text-lg">
+          Включить камеру
+        </Button>
+        <p className="mt-4 text-sm text-center text-gray-400">
+          Потребуется разрешить доступ к камере
+        </p>
+      </div>
+    );
+  }
+
   if (cameraError) {
-    return <div className="p-4 text-center text-red-500">{cameraError}</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center bg-black">
+        <p className="mb-4 text-red-500">{cameraError}</p>
+        <Button onClick={startCamera}>Попробовать снова</Button>
+      </div>
+    );
   }
 
   return (
@@ -70,9 +95,7 @@ export const GuestCameraPage = () => {
             : 'Сделать фото'}
         </Button>
         {isLimitReached && (
-          <p className="mt-4 text-yellow-400">
-            Лимит фото исчерпан. Спасибо!
-          </p>
+          <p className="mt-4 text-yellow-400">Лимит фото исчерпан. Спасибо!</p>
         )}
       </div>
     </div>
