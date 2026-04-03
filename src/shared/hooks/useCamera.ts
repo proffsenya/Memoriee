@@ -1,4 +1,3 @@
-// src/shared/hooks/useCamera.ts
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 export const useCamera = () => {
@@ -11,7 +10,7 @@ export const useCamera = () => {
     if (isRequesting) return false;
     setIsRequesting(true);
     try {
-      // Останавливаем предыдущий поток
+      // Останавливаем предыдущий поток, если есть
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -19,14 +18,8 @@ export const useCamera = () => {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Ждём загрузки метаданных и запускаем видео
-        await new Promise<void>((resolve) => {
-          videoRef.current!.onloadedmetadata = () => {
-            videoRef.current!.play()
-              .then(() => resolve())
-              .catch(e => reject(e));
-          };
-        });
+        // Запускаем видео и ждём, пока оно не начнёт воспроизводиться
+        await videoRef.current.play();
       }
       setError(null);
       return true;
