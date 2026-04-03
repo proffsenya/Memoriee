@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+  /* Адаптивные контейнеры */
+  .container {
+    @apply px-4 mx-auto;
+  }
+}
