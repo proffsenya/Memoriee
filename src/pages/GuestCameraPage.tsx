@@ -16,7 +16,7 @@ export const GuestCameraPage = () => {
   const [cameraStarted, setCameraStarted] = useState(false);
   const { videoRef, requestPermission, takePhoto, error: cameraError } = useCamera();
   const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
-  const { handleCapture, remaining, loading, isLimitReached } = useGuestUpload(eventId!, guestId);
+  const { handleCapture, remaining, loading: uploadLoading, error: uploadError, isLimitReached } = useGuestUpload(eventId!, guestId);
 
   // Загружаем фильтр события
   useEffect(() => {
@@ -49,7 +49,11 @@ export const GuestCameraPage = () => {
     }
   };
 
-  // Если камера ещё не запущена – показываем кнопку включения
+  // Показываем индикатор загрузки лимита
+  if (remaining === null && !uploadError) {
+    return <div className="flex items-center justify-center min-h-screen text-white bg-black">Загрузка информации о событии...</div>;
+  }
+
   if (!cameraStarted && !cameraError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
@@ -82,21 +86,22 @@ export const GuestCameraPage = () => {
       />
       <div className="mt-6 text-center">
         <div className="mb-4 text-white">
-          Осталось фото: <span className="text-2xl font-bold">{remaining ?? '...'}</span>
+          Осталось фото: <span className="text-2xl font-bold">{remaining}</span>
         </div>
         <Button
           onClick={onCapture}
-          disabled={filterProcessing || loading || isLimitReached}
+          disabled={filterProcessing || uploadLoading || isLimitReached}
         >
           {filterProcessing
             ? 'Обработка...'
-            : loading
+            : uploadLoading
             ? 'Загрузка...'
             : 'Сделать фото'}
         </Button>
         {isLimitReached && (
           <p className="mt-4 text-yellow-400">Лимит фото исчерпан. Спасибо!</p>
         )}
+        {uploadError && <p className="mt-2 text-red-500">{uploadError}</p>}
       </div>
     </div>
   );

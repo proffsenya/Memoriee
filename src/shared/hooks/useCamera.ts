@@ -11,7 +11,7 @@ export const useCamera = () => {
     if (isRequesting) return false;
     setIsRequesting(true);
     try {
-      // Останавливаем предыдущий поток, если есть
+      // Останавливаем предыдущий поток
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
@@ -19,13 +19,20 @@ export const useCamera = () => {
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play();
+        // Ждём загрузки метаданных и запускаем видео
+        await new Promise<void>((resolve) => {
+          videoRef.current!.onloadedmetadata = () => {
+            videoRef.current!.play()
+              .then(() => resolve())
+              .catch(e => reject(e));
+          };
+        });
       }
       setError(null);
       return true;
     } catch (err) {
       console.error('Camera error:', err);
-      setError('Не удалось получить доступ к камере. Пожалуйста, разрешите доступ и убедитесь, что сайт открыт по HTTPS.');
+      setError('Не удалось получить доступ к камере. Убедитесь, что сайт открыт по HTTPS, и разрешите доступ.');
       return false;
     } finally {
       setIsRequesting(false);

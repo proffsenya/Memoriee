@@ -1,24 +1,36 @@
+// src/features/photoUpload/hooks/useGuestUpload.ts
 import { useState, useEffect } from 'react';
 import { mockBackend } from '../../../shared/api/mockBackend';
 
 export const useGuestUpload = (eventId: string, guestId: string) => {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadRemaining = async () => {
-    const event = mockBackend.getEvent(eventId);
-    if (!event) return;
-    const used = mockBackend.getGuestUsage(eventId, guestId);
-    const rem = Math.max(0, event.photosPerGuest - used);
-    setRemaining(rem);
+    try {
+      const event = mockBackend.getEvent(eventId);
+      if (!event) {
+        setError('Событие не найдено');
+        return;
+      }
+      const used = mockBackend.getGuestUsage(eventId, guestId);
+      const rem = Math.max(0, event.photosPerGuest - used);
+      setRemaining(rem);
+    } catch (err) {
+      setError('Ошибка загрузки лимита');
+    }
   };
 
   useEffect(() => {
-    loadRemaining();
+    if (eventId && guestId) {
+      loadRemaining();
+    }
   }, [eventId, guestId]);
 
   const handleCapture = async (photoBlob: Blob) => {
     setLoading(true);
+    setError(null);
     try {
       const event = mockBackend.getEvent(eventId);
       if (!event) throw new Error('Событие не найдено');
@@ -27,14 +39,16 @@ export const useGuestUpload = (eventId: string, guestId: string) => {
         throw new Error('Лимит фото исчерпан');
       }
       const url = URL.createObjectURL(photoBlob);
-      mockBackend.addPhoto(eventId, guestId, url);
+      const result = mockBackend.addPhoto(eventId, guestId, url);
+      if (!result) throw new Error('Не удалось сохранить фото');
       await loadRemaining();
     } catch (err) {
+      setError((err as Error).message);
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  return { handleCapture, remaining, loading, isLimitReached: remaining === 0 };
+  return { handleCapture, remaining, loading, error, isLimitReached: remaining === 0 };
 };
