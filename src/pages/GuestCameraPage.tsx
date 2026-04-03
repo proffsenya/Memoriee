@@ -15,8 +15,8 @@ export const GuestCameraPage = () => {
   const [eventExists, setEventExists] = useState<boolean | null>(null);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const { videoRef, error: cameraError, startCamera, playVideo, takePhoto, isCameraReady } = useCamera();
-  const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
-  const { handleCapture, remaining, loading: uploadLoading, error: uploadError, isLimitReached } = useGuestUpload(eventId!, guestId);
+  const { applyFilter } = usePhotoFilter(filterName);
+  const { handleCapture, remaining, isLimitReached } = useGuestUpload(eventId!, guestId);
 
   useEffect(() => {
     if (eventId) {
@@ -71,7 +71,13 @@ export const GuestCameraPage = () => {
   if (showPlayButton) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
-        <video ref={videoRef} playsInline className="w-full max-w-md rounded-lg shadow-lg" />
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full max-w-md rounded-lg"
+        />
         <Button onClick={handlePlayVideo} className="px-6 py-3 mt-4 text-lg">
           Запустить видео
         </Button>
@@ -91,34 +97,49 @@ export const GuestCameraPage = () => {
 
   // Этап 3: видео запущено – интерфейс съёмки
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
-      <video ref={videoRef} autoPlay playsInline className="w-full max-w-md rounded-lg shadow-lg" />
+  <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
+    
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className="w-full max-w-md rounded-lg shadow-lg"
+    />
+
+    {showPlayButton && (
+      <Button onClick={handlePlayVideo} className="px-6 py-3 mt-4 text-lg">
+        Запустить видео
+      </Button>
+    )}
+
+    {!showPlayButton && (
       <div className="mt-6 text-center">
         <div className="mb-4 text-white">
           Осталось фото: <span className="text-2xl font-bold">{remaining}</span>
         </div>
+
         <Button
           onClick={async () => {
             if (isLimitReached) {
               alert('Лимит фото исчерпан');
               return;
             }
+
             try {
               const rawBlob = await takePhoto();
               const filteredBlob = await applyFilter(rawBlob);
               await handleCapture(filteredBlob);
               alert('Фото загружено!');
             } catch (err) {
-              alert('Ошибка: ' + (err instanceof Error ? err.message : String(err)));
+              alert('Ошибка: ' + err);
             }
           }}
-          disabled={filterProcessing || uploadLoading || isLimitReached}
         >
-          {filterProcessing ? 'Обработка...' : uploadLoading ? 'Загрузка...' : 'Сделать фото'}
+          Сделать фото
         </Button>
-        {uploadError && <p className="mt-2 text-sm text-red-400">{uploadError}</p>}
-        {isLimitReached && <p className="mt-2 text-yellow-400">Лимит исчерпан</p>}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 };
