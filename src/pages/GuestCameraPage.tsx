@@ -1,4 +1,3 @@
-// src/pages/GuestCameraPage.tsx
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useCamera } from '../shared/hooks/useCamera';
@@ -13,56 +12,70 @@ export const GuestCameraPage = () => {
   localStorage.setItem('guestId', guestId);
 
   const [filterName, setFilterName] = useState<string>('warm');
-  const [cameraStarted, setCameraStarted] = useState(false);
-  const { videoRef, requestPermission, takePhoto, error: cameraError } = useCamera();
+  const [eventExists, setEventExists] = useState<boolean | null>(null);
+  const [showPlayButton, setShowPlayButton] = useState(false);
+  const { videoRef, error: cameraError, startCamera, playVideo, takePhoto, isCameraReady } = useCamera();
   const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
   const { handleCapture, remaining, loading: uploadLoading, error: uploadError, isLimitReached } = useGuestUpload(eventId!, guestId);
 
-  // Загружаем фильтр события
   useEffect(() => {
-    const loadEvent = async () => {
-      if (eventId) {
-        const event = mockBackend.getEvent(eventId);
-        if (event) setFilterName(event.filter);
-      }
-    };
-    loadEvent();
+    if (eventId) {
+      const ev = mockBackend.getEvent(eventId);
+      setEventExists(!!ev);
+      if (ev) setFilterName(ev.filter);
+    } else {
+      setEventExists(false);
+    }
   }, [eventId]);
 
-  const startCamera = async () => {
-    const success = await requestPermission();
-    if (success) setCameraStarted(true);
+  // Когда камера получила поток, показываем кнопку "Запустить видео"
+  useEffect(() => {
+    if (isCameraReady) {
+      setShowPlayButton(true);
+    }
+  }, [isCameraReady]);
+
+  const handlePlayVideo = async () => {
+    await playVideo();
+    setShowPlayButton(false); // убираем кнопку после успешного запуска
   };
 
-  const onCapture = async () => {
-    if (isLimitReached) {
-      alert('Лимит фото исчерпан');
-      return;
-    }
-    try {
-      const rawBlob = await takePhoto();
-      const filteredBlob = await applyFilter(rawBlob);
-      await handleCapture(filteredBlob);
-      alert('Фото загружено!');
-    } catch (err) {
-      alert('Ошибка: ' + (err as Error).message);
-    }
-  };
-
-  // Показываем индикатор загрузки лимита
-  if (remaining === null && !uploadError) {
-    return <div className="flex items-center justify-center min-h-screen text-white bg-black">Загрузка информации о событии...</div>;
+  if (eventExists === false) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center text-white bg-black">
+        <p className="mb-4 text-lg text-red-500">Событие не найдено</p>
+        <p>Проверьте ссылку или обратитесь к организатору</p>
+      </div>
+    );
   }
 
-  if (!cameraStarted && !cameraError) {
+  if (eventExists === null || remaining === null) {
+    return <div className="flex items-center justify-center min-h-screen text-white bg-black">Загрузка...</div>;
+  }
+
+  // Этап 1: включаем камеру (запрос разрешения)
+  if (!isCameraReady && !cameraError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
         <Button onClick={startCamera} className="px-6 py-3 text-lg">
           Включить камеру
         </Button>
         <p className="mt-4 text-sm text-center text-gray-400">
-          Потребуется разрешить доступ к камере
+          Разрешите доступ к камере для создания фото
         </p>
+      </div>
+    );
+  }
+
+  // Этап 2: камера подключена, но видео не запущено – показываем кнопку "Запустить видео"
+  if (showPlayButton) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
+        <video ref={videoRef} playsInline className="w-full max-w-md rounded-lg shadow-lg" />
+        <Button onClick={handlePlayVideo} className="px-6 py-3 mt-4 text-lg">
+          Запустить видео
+        </Button>
+        <p className="mt-2 text-sm text-gray-400">Нажмите, чтобы начать показ</p>
       </div>
     );
   }
@@ -76,32 +89,35 @@ export const GuestCameraPage = () => {
     );
   }
 
+  // Этап 3: видео запущено – интерфейс съёмки
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        className="w-full max-w-md rounded-lg shadow-lg"
-      />
+      <video ref={videoRef} autoPlay playsInline className="w-full max-w-md rounded-lg shadow-lg" />
       <div className="mt-6 text-center">
         <div className="mb-4 text-white">
           Осталось фото: <span className="text-2xl font-bold">{remaining}</span>
         </div>
         <Button
-          onClick={onCapture}
+          onClick={async () => {
+            if (isLimitReached) {
+              alert('Лимит фото исчерпан');
+              return;
+            }
+            try {
+              const rawBlob = await takePhoto();
+              const filteredBlob = await applyFilter(rawBlob);
+              await handleCapture(filteredBlob);
+              alert('Фото загружено!');
+            } catch (err) {
+              alert('Ошибка: ' + (err instanceof Error ? err.message : String(err)));
+            }
+          }}
           disabled={filterProcessing || uploadLoading || isLimitReached}
         >
-          {filterProcessing
-            ? 'Обработка...'
-            : uploadLoading
-            ? 'Загрузка...'
-            : 'Сделать фото'}
+          {filterProcessing ? 'Обработка...' : uploadLoading ? 'Загрузка...' : 'Сделать фото'}
         </Button>
-        {isLimitReached && (
-          <p className="mt-4 text-yellow-400">Лимит фото исчерпан. Спасибо!</p>
-        )}
-        {uploadError && <p className="mt-2 text-red-500">{uploadError}</p>}
+        {uploadError && <p className="mt-2 text-sm text-red-400">{uploadError}</p>}
+        {isLimitReached && <p className="mt-2 text-yellow-400">Лимит исчерпан</p>}
       </div>
     </div>
   );

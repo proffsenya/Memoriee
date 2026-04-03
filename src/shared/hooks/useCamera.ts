@@ -3,40 +3,46 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 export const useCamera = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isRequesting, setIsRequesting] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const requestPermission = useCallback(async () => {
-    if (isRequesting) return false;
-    setIsRequesting(true);
+  const startCamera = useCallback(async () => {
     try {
-      // Останавливаем предыдущий поток, если есть
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
+        setIsCameraReady(false);
       }
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Запускаем видео и ждём, пока оно не начнёт воспроизводиться
-        await videoRef.current.play();
+        // Не вызываем play() автоматически, только подключаем поток
+        setIsCameraReady(true);
+        setError(null);
       }
-      setError(null);
-      return true;
     } catch (err) {
-      console.error('Camera error:', err);
+      console.error(err);
       setError('Не удалось получить доступ к камере. Убедитесь, что сайт открыт по HTTPS, и разрешите доступ.');
-      return false;
-    } finally {
-      setIsRequesting(false);
+      setIsCameraReady(false);
     }
-  }, [stream, isRequesting]);
+  }, [stream]);
+
+  const playVideo = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      await videoRef.current.play();
+    } catch (err) {
+      console.error('Video play failed:', err);
+      setError('Не удалось запустить видео. Нажмите ещё раз.');
+      throw err;
+    }
+  }, []);
 
   const takePhoto = useCallback((): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const video = videoRef.current;
-      if (!video || video.readyState !== 4) {
-        reject('Видео не готово');
+      if (!video || video.paused || video.ended || video.readyState !== 4 || video.videoWidth === 0) {
+        reject('Видео не активно. Нажмите "Запустить видео" и убедитесь, что картинка появилась.');
         return;
       }
       const canvas = document.createElement('canvas');
@@ -44,10 +50,10 @@ export const useCamera = () => {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        reject('Ошибка Canvas');
+        reject('Ошибка canvas');
         return;
       }
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0);
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
         else reject('Не удалось сделать фото');
@@ -63,5 +69,5 @@ export const useCamera = () => {
     };
   }, [stream]);
 
-  return { videoRef, error, requestPermission, takePhoto };
+  return { videoRef, error, startCamera, playVideo, takePhoto, isCameraReady };
 };
