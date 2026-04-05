@@ -4,35 +4,68 @@ import Webcam from 'react-webcam';
 import { usePhotoFilter } from '../shared/hooks/usePhotoFilter';
 import { useToast } from '../shared/context/ToastContext';
 import apiClient from '../shared/api/apiClient';
+import { Button, Input } from '../shared/ui';
 
 export const GuestCameraPage = () => {
   const { eventId } = useParams();
-  const guestId = localStorage.getItem('guestId') || crypto.randomUUID();
-  localStorage.setItem('guestId', guestId);
-
-  const webcamRef = useRef<Webcam>(null);
+  const [guestName, setGuestName] = useState('');
+  const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [guestId, setGuestId] = useState('');
   const [filterName, setFilterName] = useState<string>('warm');
   const [eventExists, setEventExists] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const webcamRef = useRef<Webcam>(null);
   const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
   const { showToast } = useToast();
 
+  // Загрузка события и проверка сохранённого гостя
   useEffect(() => {
     const loadEvent = async () => {
       try {
         const res = await apiClient.get(`/guest/event/${eventId}`);
         setEventExists(true);
         setFilterName(res.data.filter);
-        const usageRes = await apiClient.get(`/guest/usage/${eventId}/${guestId}`);
-        setRemaining(usageRes.data.remaining);
+
+        const storedGuestId = localStorage.getItem(`guestId_${eventId}`);
+        const storedName = storedGuestId ? localStorage.getItem(`guestName_${eventId}_${storedGuestId}`) : null;
+        if (storedGuestId && storedName) {
+          setGuestId(storedGuestId);
+          setGuestName(storedName);
+          setNameSubmitted(true);
+          const usageRes = await apiClient.get(`/guest/usage/${eventId}/${storedGuestId}`);
+          setRemaining(usageRes.data.remaining);
+        } else {
+          setRemaining(null);
+        }
       } catch {
         setEventExists(false);
       }
     };
     if (eventId) loadEvent();
-  }, [eventId, guestId]);
+  }, [eventId]);
+
+  const handleSubmitName = async () => {
+    if (!guestName.trim()) {
+      showToast('Введите ваше имя', 'error');
+      return;
+    }
+    let newGuestId = localStorage.getItem(`guestId_${eventId}`);
+    if (!newGuestId) {
+      newGuestId = crypto.randomUUID();
+      localStorage.setItem(`guestId_${eventId}`, newGuestId);
+    }
+    setGuestId(newGuestId);
+    localStorage.setItem(`guestName_${eventId}_${newGuestId}`, guestName);
+    setNameSubmitted(true);
+    try {
+      const usageRes = await apiClient.get(`/guest/usage/${eventId}/${newGuestId}`);
+      setRemaining(usageRes.data.remaining);
+    } catch {
+      showToast('Ошибка загрузки лимита', 'error');
+    }
+  };
 
   const capture = async () => {
     if (remaining === 0) {
@@ -49,9 +82,10 @@ export const GuestCameraPage = () => {
     formData.append('photo', blob, 'photo.jpg');
     formData.append('eventId', eventId!);
     formData.append('guestId', guestId);
+    formData.append('guestName', guestName);
     setUploadLoading(true);
     try {
-      const res = await apiClient.post('/guest/upload', formData, {
+      await apiClient.post('/guest/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setRemaining(prev => (prev !== null ? prev - 1 : null));
@@ -70,7 +104,32 @@ export const GuestCameraPage = () => {
       </div>
     );
   }
-  if (eventExists === null || remaining === null) {
+
+  if (eventExists === null) {
+    return <div className="flex items-center justify-center h-screen text-white bg-black">Загрузка...</div>;
+  }
+
+  if (!nameSubmitted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gray-100">
+        <div className="w-full max-w-md p-6 bg-white shadow-xl rounded-2xl">
+          <h2 className="mb-4 text-2xl font-bold text-center">Представьтесь, пожалуйста</h2>
+          <p className="mb-4 text-center text-gray-600">Введите ваше имя и фамилию</p>
+          <Input
+            placeholder="Иван Иванов"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            className="mb-4"
+          />
+          <Button onClick={handleSubmitName} className="w-full">
+            Продолжить
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (remaining === null) {
     return <div className="flex items-center justify-center h-screen text-white bg-black">Загрузка...</div>;
   }
 
@@ -86,7 +145,7 @@ export const GuestCameraPage = () => {
       />
       <div className="absolute left-0 right-0 text-center top-8">
         <div className="inline-block px-4 py-2 text-lg font-medium text-white rounded-full bg-black/50 backdrop-blur-md">
-          Осталось фото: <span className="text-2xl font-bold">{remaining}</span>
+          {guestName}, осталось фото: <span className="text-2xl font-bold">{remaining}</span>
         </div>
       </div>
       <div className="absolute left-0 right-0 flex justify-center bottom-8">

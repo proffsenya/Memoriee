@@ -16,7 +16,7 @@ exports.getEventForGuest = async (req, res) => {
 
 exports.uploadGuestPhoto = async (req, res) => {
   try {
-    const { eventId, guestId } = req.body;
+    const { eventId, guestId, guestName } = req.body;
     const event = await Event.findByPk(eventId);
     if (!event) return res.status(404).json({ error: 'Event not found' });
 
@@ -28,7 +28,7 @@ exports.uploadGuestPhoto = async (req, res) => {
 
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const fileUrl = `uploads/${req.file.filename}`;
-    const photo = await Photo.create({ url: fileUrl, eventId, guestId });
+    const photo = await Photo.create({ url: fileUrl, eventId, guestId, guestName });
     await usage.update({ count: usage.count + 1 });
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;

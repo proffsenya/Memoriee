@@ -5,6 +5,7 @@ import { fetchPhotos, deletePhoto, deleteAllPhotos } from '../features/photosSli
 import { Button } from '../shared/ui';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { Info } from 'lucide-react';
 
 export const AlbumPage = () => {
   const { eventId } = useParams();
@@ -12,15 +13,14 @@ export const AlbumPage = () => {
   const { photos, loading } = useAppSelector((state) => state.photos);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [selectedPhotoInfo, setSelectedPhotoInfo] = useState<{ url: string; guestName: string; uploadedAt: string } | null>(null);
 
-  // Загружаем фото при монтировании и при смене eventId
   useEffect(() => {
     if (eventId) {
       dispatch(fetchPhotos(eventId));
     }
   }, [eventId, dispatch]);
 
-  // Выделение / снятие фото
   const handleSelectPhoto = (id: string) => {
     const newSelected = new Set(selectedPhotos);
     if (newSelected.has(id)) newSelected.delete(id);
@@ -38,7 +38,6 @@ export const AlbumPage = () => {
     setSelectAll(!selectAll);
   };
 
-  // Скачивание ZIP
   const downloadPhotos = async (photoIds: Set<string>) => {
     const photosToDownload = photos.filter(p => photoIds.has(p.id));
     if (photosToDownload.length === 0) return;
@@ -88,6 +87,14 @@ export const AlbumPage = () => {
     }
   };
 
+  const handleShowInfo = (photo: any) => {
+    setSelectedPhotoInfo({
+      url: photo.url,
+      guestName: photo.guestName || 'Неизвестный',
+      uploadedAt: new Date(photo.createdAt).toLocaleString(),
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -131,12 +138,22 @@ export const AlbumPage = () => {
             {photos.map((photo) => (
               <div
                 key={photo.id}
-                onClick={() => handleSelectPhoto(photo.id)}
                 className={`relative rounded-lg overflow-hidden cursor-pointer border-2 transition ${
                   selectedPhotos.has(photo.id) ? 'border-blue-500 shadow-lg' : 'border-transparent'
                 }`}
               >
-                <img src={photo.url} alt="wedding" className="object-cover w-full h-48" />
+                <img
+                  src={photo.url}
+                  alt="wedding"
+                  className="object-cover w-full h-48"
+                  onClick={() => handleSelectPhoto(photo.id)}
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleShowInfo(photo); }}
+                  className="absolute p-1 text-white rounded-full bottom-2 right-2 bg-black/50 backdrop-blur-sm hover:bg-black/70"
+                >
+                  <Info size={18} />
+                </button>
                 {selectedPhotos.has(photo.id) && (
                   <div className="absolute flex items-center justify-center w-6 h-6 text-sm font-bold text-white bg-blue-500 rounded-full top-2 left-2">
                     ✓
@@ -147,6 +164,18 @@ export const AlbumPage = () => {
           </div>
         )}
       </div>
+
+      {/* Модальное окно с информацией о фото */}
+      {selectedPhotoInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={() => setSelectedPhotoInfo(null)}>
+          <div className="w-full max-w-sm p-4 bg-white rounded-xl" onClick={(e) => e.stopPropagation()}>
+            <img src={selectedPhotoInfo.url} alt="preview" className="object-cover w-full h-48 mb-4 rounded" />
+            <p><strong>Автор:</strong> {selectedPhotoInfo.guestName}</p>
+            <p><strong>Дата и время:</strong> {selectedPhotoInfo.uploadedAt}</p>
+            <Button onClick={() => setSelectedPhotoInfo(null)} className="w-full mt-4">Закрыть</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
