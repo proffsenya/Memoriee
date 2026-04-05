@@ -42,6 +42,40 @@ export const fetchUserEvents = createAsyncThunk('event/fetchUserEvents', async (
   return stored ? JSON.parse(stored) : [];
 });
 
+export const deleteEvent = createAsyncThunk(
+  'event/deleteEvent',
+  async (eventId: string) => {
+    // Удаляем событие
+    const events = JSON.parse(localStorage.getItem('memoriee_events') || '[]');
+    const updatedEvents = events.filter((e: any) => e.id !== eventId);
+    localStorage.setItem('memoriee_events', JSON.stringify(updatedEvents));
+    // Удаляем все фото этого события
+    const photos = JSON.parse(localStorage.getItem('memoriee_photos') || '[]');
+    const remainingPhotos = photos.filter((p: any) => p.eventId !== eventId);
+    localStorage.setItem('memoriee_photos', JSON.stringify(remainingPhotos));
+    // Удаляем usage гостей
+    const usage = JSON.parse(localStorage.getItem('memoriee_guest_usage') || '{}');
+    const newUsage = Object.fromEntries(
+      Object.entries(usage).filter(([key]) => !key.startsWith(eventId))
+    );
+    localStorage.setItem('memoriee_guest_usage', JSON.stringify(newUsage));
+    return eventId;
+  }
+);
+
+export const updateEvent = createAsyncThunk(
+  'event/updateEvent',
+  async ({ eventId, updates }: { eventId: string; updates: Partial<Event> }) => {
+    const events = JSON.parse(localStorage.getItem('memoriee_events') || '[]');
+    const index = events.findIndex((e: Event) => e.id === eventId);
+    if (index === -1) throw new Error('Event not found');
+    const updatedEvent = { ...events[index], ...updates };
+    events[index] = updatedEvent;
+    localStorage.setItem('memoriee_events', JSON.stringify(events));
+    return updatedEvent;
+  }
+);
+
 
 
 const eventSlice = createSlice({
@@ -58,12 +92,17 @@ const eventSlice = createSlice({
       }
     },
   },
+  
 extraReducers: (builder) => {
   builder
     // createEvent
     .addCase(createEvent.pending, (state) => {
       state.loading = true;
       state.error = null;
+    })
+    .addCase(updateEvent.fulfilled, (state, action) => {
+    state.currentEvent = action.payload;
+    state.events = state.events.map(e => e.id === action.payload.id ? action.payload : e);
     })
     .addCase(createEvent.fulfilled, (state, action) => {
       state.loading = false;
@@ -75,6 +114,7 @@ extraReducers: (builder) => {
       state.loading = false;
       state.error = action.error.message || 'Failed to create event';
     })
+    
     // fetchEvent
     .addCase(fetchEvent.pending, (state) => {
       state.loading = true;
@@ -95,6 +135,10 @@ extraReducers: (builder) => {
     .addCase(fetchUserEvents.fulfilled, (state, action) => {
       state.loading = false;
       state.events = action.payload;
+    })
+    .addCase(deleteEvent.fulfilled, (state, action) => {
+      state.events = state.events.filter(e => e.id !== action.payload);
+      if (state.currentEvent?.id === action.payload) state.currentEvent = null;
     })
     .addCase(fetchUserEvents.rejected, (state, action) => {
       state.loading = false;

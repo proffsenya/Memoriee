@@ -1,4 +1,3 @@
-// src/features/photoUpload/hooks/useGuestUpload.ts
 import { useState, useEffect } from 'react';
 import { mockBackend } from '../../../shared/api/mockBackend';
 
@@ -12,11 +11,12 @@ export const useGuestUpload = (eventId: string, guestId: string) => {
       const event = mockBackend.getEvent(eventId);
       if (!event) {
         setError('Событие не найдено');
+        setRemaining(null);
         return;
       }
       const used = mockBackend.getGuestUsage(eventId, guestId);
-      const rem = Math.max(0, event.photosPerGuest - used);
-      setRemaining(rem);
+      setRemaining(Math.max(0, event.photosPerGuest - used));
+      setError(null);
     } catch (err) {
       setError('Ошибка загрузки лимита');
     }
@@ -35,12 +35,9 @@ export const useGuestUpload = (eventId: string, guestId: string) => {
       const event = mockBackend.getEvent(eventId);
       if (!event) throw new Error('Событие не найдено');
       const used = mockBackend.getGuestUsage(eventId, guestId);
-      if (used >= event.photosPerGuest) {
-        throw new Error('Лимит фото исчерпан');
-      }
-      const url = URL.createObjectURL(photoBlob);
-      const result = mockBackend.addPhoto(eventId, guestId, url);
-      if (!result) throw new Error('Не удалось сохранить фото');
+      if (used >= event.photosPerGuest) throw new Error('Лимит фото исчерпан');
+      // Передаём Blob напрямую в mockBackend (он сам сконвертирует в base64)
+      await mockBackend.addPhoto(eventId, guestId, photoBlob);
       await loadRemaining();
     } catch (err) {
       setError((err as Error).message);

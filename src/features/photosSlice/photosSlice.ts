@@ -14,22 +14,19 @@ const initialState: PhotosState = {
   error: null,
 };
 
-// Исправленный thunk – принимает guestId
+// Асинхронный thunk для загрузки фото (создаёт base64 и сохраняет)
 export const uploadPhoto = createAsyncThunk(
   'photos/uploadPhoto',
   async ({ eventId, guestId, photoBlob }: { eventId: string; guestId: string; photoBlob: Blob }) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const url = URL.createObjectURL(photoBlob);
-    const result = mockBackend.addPhoto(eventId, guestId, url);
-    if (!result) throw new Error('Failed to upload photo');
+    const result = await mockBackend.addPhoto(eventId, guestId, photoBlob);
     return result;
   }
 );
 
+// Получение всех фото события
 export const fetchPhotos = createAsyncThunk(
   'photos/fetchPhotos',
   async (eventId: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
     return mockBackend.getPhotos(eventId);
   }
 );
@@ -38,15 +35,27 @@ const photosSlice = createSlice({
   name: 'photos',
   initialState,
   reducers: {
-    clearPhotos: (state) => {
-      state.photos = [];
+    // Удалить все фото ТОЛЬКО для текущего события
+    clearAllPhotosForEvent: (state, action: PayloadAction<string>) => {
+      const eventId = action.payload;
+      state.photos = state.photos.filter(p => p.eventId !== eventId);
+      // Обновляем localStorage
+      const allPhotos = JSON.parse(localStorage.getItem('memoriee_photos') || '[]');
+      const remaining = allPhotos.filter((p: Photo) => p.eventId !== eventId);
+      localStorage.setItem('memoriee_photos', JSON.stringify(remaining));
     },
+    // Удалить одно фото по id
     removePhoto: (state, action: PayloadAction<string>) => {
-      state.photos = state.photos.filter(photo => photo.id !== action.payload);
+      const photoId = action.payload;
+      state.photos = state.photos.filter(photo => photo.id !== photoId);
+      const allPhotos = JSON.parse(localStorage.getItem('memoriee_photos') || '[]');
+      const updated = allPhotos.filter((p: Photo) => p.id !== photoId);
+      localStorage.setItem('memoriee_photos', JSON.stringify(updated));
     },
   },
   extraReducers: (builder) => {
     builder
+      // uploadPhoto
       .addCase(uploadPhoto.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -61,6 +70,7 @@ const photosSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to upload photo';
       })
+      // fetchPhotos
       .addCase(fetchPhotos.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -76,5 +86,5 @@ const photosSlice = createSlice({
   },
 });
 
-export const { clearPhotos, removePhoto } = photosSlice.actions;
+export const { clearAllPhotosForEvent, removePhoto } = photosSlice.actions;
 export default photosSlice.reducer;

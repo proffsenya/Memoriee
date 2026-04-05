@@ -25,35 +25,35 @@ export const mockBackend = {
     const events: Event[] = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
     return events.find(e => e.id === id) || null;
   },
-  addPhoto: (eventId: string, guestId: string, url: string): Photo | null => {
-    const event = mockBackend.getEvent(eventId);
-    if (!event) return null;
-
-    // проверка лимита
-    const usageKey = `${eventId}:${guestId}`;
-    const usage = JSON.parse(localStorage.getItem(GUEST_USAGE_KEY) || '{}');
-    const currentCount = usage[usageKey] || 0;
-    if (currentCount >= event.photosPerGuest) {
-      throw new Error('Лимит фото для этого гостя исчерпан');
-    }
-
-    // сохраняем фото
-    const photos: Photo[] = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
-    const newPhoto: Photo = {
-      id: crypto.randomUUID(),
-      eventId,
-      url,
-      uploadedAt: new Date().toISOString(),
-    };
-    photos.push(newPhoto);
-    localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
-
-    // увеличиваем счетчик гостя
-    usage[usageKey] = currentCount + 1;
-    localStorage.setItem(GUEST_USAGE_KEY, JSON.stringify(usage));
-
-    return newPhoto;
-  },
+addPhoto: async (eventId: string, guestId: string, photoBlob: Blob): Promise<Photo> => {
+  const event = mockBackend.getEvent(eventId);
+  if (!event) throw new Error('Event not found');
+  const usageKey = `${eventId}:${guestId}`;
+  const usage = JSON.parse(localStorage.getItem(GUEST_USAGE_KEY) || '{}');
+  const currentCount = usage[usageKey] || 0;
+  if (currentCount >= event.photosPerGuest) {
+    throw new Error('Лимит фото для этого гостя исчерпан');
+  }
+  // Конвертируем Blob в base64
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(photoBlob);
+  });
+  const photos: Photo[] = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
+  const newPhoto: Photo = {
+    id: crypto.randomUUID(),
+    eventId,
+    url: base64,
+    uploadedAt: new Date().toISOString(),
+  };
+  photos.push(newPhoto);
+  localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+  usage[usageKey] = currentCount + 1;
+  localStorage.setItem(GUEST_USAGE_KEY, JSON.stringify(usage));
+  return newPhoto;
+},
   getPhotos: (eventId: string): Photo[] => {
     const photos: Photo[] = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
     return photos.filter(p => p.eventId === eventId);
