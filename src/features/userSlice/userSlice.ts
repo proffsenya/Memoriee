@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { login, register } from '../../shared/api/auth';
+import apiClient from '../../shared/api/apiClient';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  phone?: string;
 }
 
 interface UserState {
@@ -19,27 +20,31 @@ const initialState: UserState = {
   error: null,
 };
 
-// Загрузка профиля из localStorage при старте
-export const loadUserFromStorage = createAsyncThunk('user/load', async () => {
-  const stored = localStorage.getItem('memoriee_user');
-  if (stored) return JSON.parse(stored);
-  return null;
-});
-
-export const updateUserProfile = createAsyncThunk(
-  'user/update',
-  async (data: Partial<User>) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); // имитация API
-    const existing = localStorage.getItem('memoriee_user');
-    const current = existing ? JSON.parse(existing) : { id: crypto.randomUUID() };
-    const updated = { ...current, ...data };
-    localStorage.setItem('memoriee_user', JSON.stringify(updated));
-    return updated;
+export const registerUser = createAsyncThunk(
+  'user/register',
+  async ({ name, email, password }: { name: string; email: string; password: string }) => {
+    const res = await register(name, email, password);
+    localStorage.setItem('token', res.data.token);
+    return res.data.user;
   }
 );
 
+export const loginUser = createAsyncThunk(
+  'user/login',
+  async ({ email, password }: { email: string; password: string }) => {
+    const res = await login(email, password);
+    localStorage.setItem('token', res.data.token);
+    return res.data.user;
+  }
+);
+
+export const fetchMe = createAsyncThunk('user/fetchMe', async () => {
+  const res = await apiClient.get('/auth/me');
+  return res.data;
+});
+
 export const logout = createAsyncThunk('user/logout', async () => {
-  localStorage.removeItem('memoriee_user');
+  localStorage.removeItem('token');
   return null;
 });
 
@@ -49,23 +54,14 @@ const userSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(loadUserFromStorage.fulfilled, (state, action) => {
-        state.user = action.payload;
-      })
-      .addCase(updateUserProfile.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(updateUserProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload;
-      })
-      .addCase(updateUserProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Ошибка обновления';
-      })
-      .addCase(logout.fulfilled, (state) => {
-        state.user = null;
-      });
+      .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(registerUser.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
+      .addCase(registerUser.rejected, (state, action) => { state.loading = false; state.error = action.error.message || 'Ошибка регистрации'; })
+      .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(loginUser.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
+      .addCase(loginUser.rejected, (state, action) => { state.loading = false; state.error = action.error.message || 'Ошибка входа'; })
+      .addCase(fetchMe.fulfilled, (state, action) => { state.user = action.payload; })
+      .addCase(logout.fulfilled, (state) => { state.user = null; });
   },
 });
 
