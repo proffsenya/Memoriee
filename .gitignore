@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 memoriee-backend/uploads/*
+memoriee-backend/database.sqlite
 
 # Editor directories and files
 .vscode/*

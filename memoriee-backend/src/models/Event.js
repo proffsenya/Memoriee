@@ -9,6 +9,9 @@ const Event = sequelize.define('Event', {
   category: { type: DataTypes.STRING, allowNull: false },
   filter: { type: DataTypes.ENUM('warm', 'bw', 'vintage'), defaultValue: 'warm' },
   photosPerGuest: { type: DataTypes.INTEGER, defaultValue: 30 },
+  guestCount: { type: DataTypes.INTEGER, allowNull: false },      // сколько гостей планируется
+  totalPhotos: { type: DataTypes.INTEGER, allowNull: false },     // guestCount * photosPerGuest
+  usedPhotos: { type: DataTypes.INTEGER, defaultValue: 0 },       // сколько уже загружено
   userId: { type: DataTypes.UUID, references: { model: User, key: 'id' } },
 }, { timestamps: true });
 

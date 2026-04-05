@@ -16,10 +16,13 @@ const initialState: EventState = {
   error: null,
 };
 
-export const createEvent = createAsyncThunk('event/createEvent', async (dto: CreateEventDTO) => {
-  const res = await apiClient.post('/events', dto);
-  return res.data;
-});
+export const createEvent = createAsyncThunk(
+  'event/createEvent',
+  async (dto: { name: string; date: string; category: string; filter: string; photosPerGuest: number; guestCount: number }) => {
+    const res = await apiClient.post('/events', dto);
+    return res.data;
+  }
+);
 
 export const fetchEvent = createAsyncThunk('event/fetchEvent', async (id: string) => {
   const res = await apiClient.get(`/events/${id}`);

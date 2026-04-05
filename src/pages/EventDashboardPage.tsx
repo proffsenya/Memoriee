@@ -78,7 +78,8 @@ export const EventDashboardPage = () => {
                 <p className="text-gray-600">Дата: {new Date(currentEvent.date).toLocaleDateString()}</p>
                 <p className="text-gray-600">Категория: {currentEvent.category}</p>
                 <p className="text-gray-600">Фильтр: {currentEvent.filter === 'warm' ? 'Теплый' : currentEvent.filter === 'bw' ? 'Ч/Б' : 'Винтаж'}</p>
-                <p className="text-gray-600">Лимит на гостя: {currentEvent.photosPerGuest} фото</p>
+                <p>Всего фото: {currentEvent.usedPhotos} / {currentEvent.totalPhotos}</p>
+                <p>Гостей: {currentEvent.guestCount}, лимит на гостя: {currentEvent.photosPerGuest}</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="secondary" onClick={() => {

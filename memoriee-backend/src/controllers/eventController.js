@@ -5,9 +5,10 @@ const { Op } = require('sequelize');
 
 exports.createEvent = async (req, res) => {
   try {
-    const { name, date, category, filter, photosPerGuest } = req.body;
+    const { name, date, category, filter, photosPerGuest, guestCount } = req.body;
+    const totalPhotos = guestCount * photosPerGuest;
     const event = await Event.create({
-      name, date, category, filter, photosPerGuest,
+      name, date, category, filter, photosPerGuest, guestCount, totalPhotos,
       userId: req.userId,
     });
     res.status(201).json(event);
