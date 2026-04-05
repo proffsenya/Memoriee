@@ -5,7 +5,7 @@ export const usePhotoFilter = (filterName: string) => {
 
   const applyFilter = async (blob: Blob): Promise<Blob> => {
     setProcessing(true);
-    return new Promise<Blob>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(blob);
       img.onload = () => {
@@ -14,44 +14,37 @@ export const usePhotoFilter = (filterName: string) => {
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          reject('Canvas context error');
+          reject('Canvas error');
           return;
         }
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
+        const data = imageData.data;
+
         switch (filterName) {
           case 'bw':
-            for (let i = 0; i < imageData.data.length; i += 4) {
-              const r = imageData.data[i];
-              const g = imageData.data[i+1];
-              const b = imageData.data[i+2];
-              const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-              imageData.data[i] = gray;
-              imageData.data[i+1] = gray;
-              imageData.data[i+2] = gray;
+            for (let i = 0; i < data.length; i += 4) {
+              const gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+              data[i] = gray;
+              data[i+1] = gray;
+              data[i+2] = gray;
             }
             break;
           case 'vintage':
-            for (let i = 0; i < imageData.data.length; i += 4) {
-              let r = imageData.data[i];
-              let g = imageData.data[i+1];
-              let b = imageData.data[i+2];
-              const tr = 0.393 * r + 0.769 * g + 0.189 * b;
-              const tg = 0.349 * r + 0.686 * g + 0.168 * b;
-              const tb = 0.272 * r + 0.534 * g + 0.131 * b;
-              imageData.data[i] = Math.min(255, tr);
-              imageData.data[i+1] = Math.min(255, tg);
-              imageData.data[i+2] = Math.min(255, tb);
+            for (let i = 0; i < data.length; i += 4) {
+              let r = data[i];
+              let g = data[i+1];
+              let b = data[i+2];
+              data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+              data[i+1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+              data[i+2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
             }
             break;
           case 'warm':
           default:
-            for (let i = 0; i < imageData.data.length; i += 4) {
-              let r = imageData.data[i];
-              let b = imageData.data[i+2];
-              imageData.data[i] = Math.min(255, r * 1.2);
-              imageData.data[i+2] = b * 0.8;
+            for (let i = 0; i < data.length; i += 4) {
+              data[i] = Math.min(255, data[i] * 1.2);     // R
+              data[i+2] = data[i+2] * 0.8;               // B
             }
             break;
         }

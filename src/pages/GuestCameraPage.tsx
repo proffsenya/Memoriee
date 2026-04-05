@@ -20,13 +20,12 @@ export const GuestCameraPage = () => {
   const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
   const { showToast } = useToast();
 
-  // Загрузка события и проверка сохранённого гостя
   useEffect(() => {
     const loadEvent = async () => {
       try {
         const res = await apiClient.get(`/guest/event/${eventId}`);
         setEventExists(true);
-        setFilterName(res.data.filter);
+        setFilterName(res.data.filter); // загружаем фильтр из события
 
         const storedGuestId = localStorage.getItem(`guestId_${eventId}`);
         const storedName = storedGuestId ? localStorage.getItem(`guestName_${eventId}_${storedGuestId}`) : null;
@@ -78,8 +77,10 @@ export const GuestCameraPage = () => {
       return;
     }
     const blob = await (await fetch(imageSrc)).blob();
+    // Применяем фильтр
+    const filteredBlob = await applyFilter(blob);
     const formData = new FormData();
-    formData.append('photo', blob, 'photo.jpg');
+    formData.append('photo', filteredBlob, 'photo.jpg');
     formData.append('eventId', eventId!);
     formData.append('guestId', guestId);
     formData.append('guestName', guestName);
