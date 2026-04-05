@@ -138,7 +138,7 @@ export const EventDashboardPage = () => {
 
         {/* Ссылки */}
         <div className="mt-4 space-y-2 text-center">
-          <a href={albumUrl} target="_blank" className="block text-blue-600 underline">Открыть альбом</a>
+          <a href={albumUrl} className="block text-blue-600 underline">Открыть альбом</a>
           <Button variant="secondary" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/guest/${eventId}`)}>
             Скопировать ссылку для гостей
           </Button>

@@ -10,7 +10,15 @@ const photoRoutes = require('./routes/photoRoutes');
 const guestRoutes = require('./routes/guestRoutes');
 
 const app = express();
-app.use(cors());
+
+// Полностью открытый CORS (только для разработки!)
+app.use(cors({
+  origin: true,        // разрешить любой источник
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 

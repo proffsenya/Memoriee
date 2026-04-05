@@ -1,4 +1,7 @@
 import { createBrowserRouter, RouterProvider as RRDRouterProvider } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useAppDispatch } from '../store/hooks';
+import { fetchMe } from '../../features/userSlice/userSlice';
 import { AdaptiveLayout } from '../Layout/AdaptiveLayout';
 import { LandingPage } from '../../pages/LandingPage';
 import { CreateEventPage } from '../../pages/CreateEventPage';
@@ -25,7 +28,16 @@ const router = createBrowserRouter([
       { path: '/profile', element: <PrivateRoute><ProfilePage /></PrivateRoute> },
     ],
   },
-  { path: '/guest/:eventId', element: <GuestCameraPage /> }, // публичный
+  { path: '/guest/:eventId', element: <GuestCameraPage /> },
 ]);
 
-export const RouterProvider = () => <RRDRouterProvider router={router} />;
+// Компонент-обёртка для вызова fetchMe
+const RouterProviderWithAuth = () => {
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    dispatch(fetchMe());
+  }, [dispatch]);
+  return <RRDRouterProvider router={router} />;
+};
+
+export const RouterProvider = () => <RouterProviderWithAuth />;

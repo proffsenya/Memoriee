@@ -16,7 +16,7 @@ interface UserState {
 
 const initialState: UserState = {
   user: null,
-  loading: false,
+  loading: true,
   error: null,
 };
 
@@ -60,8 +60,10 @@ const userSlice = createSlice({
       .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(loginUser.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
       .addCase(loginUser.rejected, (state, action) => { state.loading = false; state.error = action.error.message || 'Ошибка входа'; })
-      .addCase(fetchMe.fulfilled, (state, action) => { state.user = action.payload; })
-      .addCase(logout.fulfilled, (state) => { state.user = null; });
+      .addCase(fetchMe.pending, (state) => { state.loading = true; })
+      .addCase(fetchMe.fulfilled, (state, action) => { state.loading = false; state.user = action.payload; })
+      .addCase(fetchMe.rejected, (state) => { state.loading = false; state.user = null; })
+      .addCase(logout.fulfilled, (state) => { state.user = null; state.loading = false; });
   },
 });
 
