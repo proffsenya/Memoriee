@@ -1,7 +1,8 @@
 import { createBrowserRouter, RouterProvider as RRDRouterProvider } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppDispatch } from '../store/hooks';
 import { fetchMe } from '../../features/userSlice/userSlice';
+import { SplashScreen } from '../../pages/SplashScreen';
 import { AdaptiveLayout } from '../Layout/AdaptiveLayout';
 import { LandingPage } from '../../pages/LandingPage';
 import { CreateEventPage } from '../../pages/CreateEventPage';
@@ -34,9 +35,16 @@ const router = createBrowserRouter([
 // Компонент-обёртка для вызова fetchMe
 const RouterProviderWithAuth = () => {
   const dispatch = useAppDispatch();
+  const [splashComplete, setSplashComplete] = useState(false);
+
   useEffect(() => {
     dispatch(fetchMe());
   }, [dispatch]);
+
+  if (!splashComplete) {
+    return <SplashScreen onComplete={() => setSplashComplete(true)} />;
+  }
+
   return <RRDRouterProvider router={router} />;
 };
 

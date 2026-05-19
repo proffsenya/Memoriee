@@ -48,6 +48,9 @@ export const logout = createAsyncThunk('user/logout', async () => {
   return null;
 });
 
+// Alias for convenience
+export const logoutUser = logout;
+
 const userSlice = createSlice({
   name: 'user',
   initialState,

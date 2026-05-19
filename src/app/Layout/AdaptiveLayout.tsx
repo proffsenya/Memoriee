@@ -1,7 +1,9 @@
 // src/app/Layout/AdaptiveLayout.tsx
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Calendar, User, LogOut } from 'lucide-react';
 import { useMediaQuery } from '../../shared/hooks/useMediaQuery';
+import { useAppDispatch } from '../store/hooks';
+import { logoutUser } from '../../features/userSlice/userSlice';
 
 const navItems = [
   { path: '/', label: 'Главная', icon: Home },
@@ -12,7 +14,12 @@ const navItems = [
 export const AdaptiveLayout = () => {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const location = useLocation();
+  const dispatch = useAppDispatch();
   const isGuestPage = location.pathname.startsWith('/guest/');
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+  };
 
   // Для гостей не показываем навигацию вообще
   if (isGuestPage) {
@@ -20,12 +27,17 @@ export const AdaptiveLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
       {isDesktop && (
-        <aside className="fixed top-0 left-0 w-64 h-full bg-white border-r border-gray-200 shadow-sm">
+        <aside className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700 shadow-2xl">
           <div className="p-6">
-            <h1 className="text-2xl font-bold text-primary-600">Memoriee</h1>
-            <p className="mt-1 text-sm text-gray-500">Ваши воспоминания</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+                <span className="text-xl">📸</span>
+              </div>
+              <h1 className="text-2xl font-bold text-white">Memoriee</h1>
+            </div>
+            <p className="text-sm text-gray-400">Ваши воспоминания</p>
           </div>
           <nav className="mt-6">
             {navItems.map(({ path, label, icon: Icon }) => (
@@ -33,8 +45,8 @@ export const AdaptiveLayout = () => {
                 key={path}
                 to={path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-6 py-3 text-gray-700 hover:bg-gray-100 transition ${
-                    isActive ? 'bg-primary-50 text-primary-600 border-r-2 border-primary-600' : ''
+                  `flex items-center gap-3 px-6 py-3 text-gray-300 hover:text-white hover:bg-slate-700/50 transition ${
+                    isActive ? 'bg-indigo-500/20 text-indigo-400 border-r-2 border-indigo-500' : ''
                   }`
                 }
               >
@@ -43,6 +55,16 @@ export const AdaptiveLayout = () => {
               </NavLink>
             ))}
           </nav>
+
+          <div className="absolute bottom-6 left-6 right-6">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/10 rounded-lg transition text-sm"
+            >
+              <LogOut size={18} />
+              <span>Выход</span>
+            </button>
+          </div>
         </aside>
       )}
 
@@ -53,15 +75,15 @@ export const AdaptiveLayout = () => {
       </main>
 
       {!isDesktop && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-          <div className="flex items-center justify-around py-2">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-slate-800 to-slate-800/95 border-t border-slate-700 shadow-2xl">
+          <div className="flex items-center justify-around py-3 px-2">
             {navItems.map(({ path, label, icon: Icon }) => (
               <NavLink
                 key={path}
                 to={path}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-3 py-1 rounded-full transition ${
-                    isActive ? 'text-primary-600' : 'text-gray-500'
+                  `flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition ${
+                    isActive ? 'text-indigo-400 bg-indigo-500/10' : 'text-gray-400 hover:text-gray-300'
                   }`
                 }
               >
@@ -69,6 +91,13 @@ export const AdaptiveLayout = () => {
                 <span className="text-xs">{label}</span>
               </NavLink>
             ))}
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition text-gray-400 hover:text-red-400"
+            >
+              <LogOut size={24} />
+              <span className="text-xs">Выход</span>
+            </button>
           </div>
         </div>
       )}

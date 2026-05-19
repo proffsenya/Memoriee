@@ -5,7 +5,7 @@ export const usePhotoFilter = (filterName: string) => {
 
   const applyFilter = async (blob: Blob): Promise<Blob> => {
     setProcessing(true);
-    return new Promise((resolve, reject) => {
+    return new Promise<Blob>((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(blob);
       img.onload = () => {
@@ -32,9 +32,9 @@ export const usePhotoFilter = (filterName: string) => {
             break;
           case 'vintage':
             for (let i = 0; i < data.length; i += 4) {
-              let r = data[i];
-              let g = data[i+1];
-              let b = data[i+2];
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
               data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
               data[i+1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
               data[i+2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);

@@ -18,26 +18,26 @@ export const Toast = ({ id, message, type, onClose, duration = 3000 }: ToastProp
   }, [id, duration, onClose]);
 
   const icons = {
-    success: <CheckCircle size={20} className="text-green-500" />,
-    error: <AlertCircle size={20} className="text-red-500" />,
-    info: <Info size={20} className="text-blue-500" />,
+    success: <CheckCircle size={20} className="text-emerald-400" />,
+    error: <AlertCircle size={20} className="text-red-400" />,
+    info: <Info size={20} className="text-blue-400" />,
   };
 
   const bgColors = {
-    success: 'bg-green-50 border-green-200',
-    error: 'bg-red-50 border-red-200',
-    info: 'bg-blue-50 border-blue-200',
+    success: 'bg-emerald-900/30 border-emerald-700/50',
+    error: 'bg-red-900/30 border-red-700/50',
+    info: 'bg-blue-900/30 border-blue-700/50',
   };
 
   return (
-    <div className={`${bgColors[type]} border rounded-lg shadow-lg p-3 pr-8 min-w-[200px] relative animate-slide-in`}>
-      <div className="flex items-center gap-2">
+    <div className={`${bgColors[type]} border rounded-xl shadow-lg p-4 pr-10 min-w-[250px] relative animate-slide-in backdrop-blur`}>
+      <div className="flex items-center gap-3">
         {icons[type]}
-        <span className="text-sm text-gray-800">{message}</span>
+        <span className="text-sm text-gray-200">{message}</span>
       </div>
       <button
         onClick={() => onClose(id)}
-        className="absolute text-gray-400 top-2 right-2 hover:text-gray-600"
+        className="absolute text-gray-400 top-3 right-3 hover:text-gray-300 transition"
       >
         <X size={16} />
       </button>
