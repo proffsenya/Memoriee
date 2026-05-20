@@ -1,5 +1,6 @@
 const Photo = require('../models/Photo');
 const Event = require('../models/Event');
+const GuestUsage = require('../models/GuestUsage');
 const fs = require('fs').promises;
 
 exports.getEventPhotos = async (req, res) => {

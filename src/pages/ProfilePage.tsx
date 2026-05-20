@@ -13,7 +13,11 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto pt-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 pb-20">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute w-80 h-80 bg-indigo-500 rounded-full opacity-5 blur-3xl top-20 -left-40"></div>
+      </div>
+      <div className="relative z-10 max-w-2xl mx-auto px-4 pt-6">
       {/* Profile Card */}
       <Card className="mb-8 text-center bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
         <div className="flex items-center justify-center w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg">
@@ -45,6 +49,7 @@ export const ProfilePage = () => {
           <p>📸 <span className="text-gray-400">Ваша платформа для сбора воспоминаний</span></p>
           <p>🎯 <span className="text-gray-400">Создавайте события, приглашайте гостей, собирайте фото</span></p>
         </div>
+      </div>
       </div>
     </div>
   );

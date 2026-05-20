@@ -89,8 +89,15 @@ export const GuestCameraPage = () => {
       await apiClient.post('/guest/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setRemaining(prev => (prev !== null ? prev - 1 : null));
-      showToast('Фото загружено!', 'success');
+      const newRemaining = remaining !== null ? remaining - 1 : 0;
+      setRemaining(newRemaining);
+      if (newRemaining === 0) {
+        showToast('🎉 Лимит достигнут! Спасибо за фото!', 'success');
+      } else if (newRemaining <= 3) {
+        showToast(`✓ Фото загружено! Осталось: ${newRemaining}`, 'success');
+      } else {
+        showToast('✓ Фото загружено!', 'success');
+      }
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Ошибка загрузки', 'error');
     } finally {
@@ -112,10 +119,10 @@ export const GuestCameraPage = () => {
 
   if (!nameSubmitted) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-gray-100">
-        <div className="w-full max-w-md p-6 bg-white shadow-xl rounded-2xl">
-          <h2 className="mb-4 text-2xl font-bold text-center">Представьтесь, пожалуйста</h2>
-          <p className="mb-4 text-center text-gray-600">Введите ваше имя и фамилию</p>
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
+        <div className="w-full max-w-md p-6 bg-slate-800 border border-slate-700 shadow-xl rounded-2xl">
+          <h2 className="mb-4 text-2xl font-bold text-center text-white">Представьтесь, пожалуйста</h2>
+          <p className="mb-4 text-center text-gray-300">Введите ваше имя и фамилию</p>
           <Input
             placeholder="Иван Иванов"
             value={guestName}
@@ -144,21 +151,39 @@ export const GuestCameraPage = () => {
         onUserMediaError={(err) => setCameraError(typeof err === 'string' ? err : err.message)}
         className="absolute inset-0 object-cover w-full h-full"
       />
-      <div className="absolute left-0 right-0 text-center top-8">
-        <div className="inline-block px-4 py-2 text-lg font-medium text-white rounded-full bg-black/50 backdrop-blur-md">
-          {guestName}, осталось фото: <span className="text-2xl font-bold">{remaining}</span>
+      
+      {/* Top counter - guest name and remaining photos */}
+      <div className="absolute left-0 right-0 top-0 flex justify-between items-start p-4 text-white">
+        <div className="text-left">
+          <div className="text-sm text-gray-300 uppercase tracking-widest">Гость</div>
+          <div className="text-lg font-semibold">{guestName}</div>
+        </div>
+        <div className="text-right backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2">
+          <div className="text-xs text-gray-300 uppercase tracking-widest">Осталось</div>
+          <div className="text-3xl font-bold">{remaining}</div>
         </div>
       </div>
+
+      {/* Bottom center camera button */}
       <div className="absolute left-0 right-0 flex justify-center bottom-8">
         <button
           onClick={capture}
           disabled={filterProcessing || uploadLoading || remaining === 0}
-          className="w-20 h-20 transition border-4 border-white rounded-full shadow-lg bg-white/30 backdrop-blur-md active:scale-95"
+          className="w-20 h-20 transition border-4 border-white rounded-full shadow-lg bg-white/30 backdrop-blur-md active:scale-95 disabled:opacity-50"
           style={{ boxShadow: '0 0 0 6px rgba(255,255,255,0.3)' }}
         >
           <div className="w-full h-full bg-white rounded-full"></div>
         </button>
       </div>
+
+      {/* Bottom left status indicator */}
+      <div className="absolute left-4 bottom-8 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2">
+        <div className="text-xs text-gray-300 uppercase tracking-widest">Статус</div>
+        <div className="text-sm font-semibold text-white">
+          {uploadLoading ? '⏳ Загрузка...' : filterProcessing ? '🎨 Обработка...' : remaining === 0 ? '✓ Лимит достигнут' : '📸 Готово'}
+        </div>
+      </div>
+
       {cameraError && (
         <div className="absolute left-0 right-0 py-2 text-sm text-center text-red-400 bottom-28 bg-black/50">
           Ошибка камеры: {cameraError}

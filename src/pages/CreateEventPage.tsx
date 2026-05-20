@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../app/store/hooks';
 import { createEvent } from '../features/eventSlice/eventSlice';
 import { Card, Input, Button } from '../shared/ui';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
+import { useToast } from '../shared/context/ToastContext';
 
 const categories = [
   { name: 'Свадьба', emoji: '💍' },
@@ -25,6 +26,7 @@ export const CreateEventPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -34,26 +36,31 @@ export const CreateEventPage = () => {
   const [guestCount, setGuestCount] = useState(20);
   const [photosPerGuest, setPhotosPerGuest] = useState(30);
   const [loading, setLoading] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const totalPhotos = guestCount * photosPerGuest;
   const totalPrice = totalPhotos * PRICE_PER_PHOTO;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async () => {
     setLoading(true);
-    const confirmed = confirm(`Оплатить ${totalPrice} руб. за ${totalPhotos} фото?`);
-    if (!confirmed) {
-      setLoading(false);
-      return;
-    }
     try {
       const result = await dispatch(createEvent({
         name, date, category, filter, photosPerGuest, guestCount
       })).unwrap();
-      navigate(`/event/${result.id}/dashboard`);
+      setShowPaymentDialog(false);
+      showToast(`💳 Оплата успешно прошла! Получено ${totalPhotos} слотов на ${totalPrice} ₽`, 'success');
+      setTimeout(() => {
+        navigate(`/event/${result.id}/dashboard`);
+      }, 1500);
     } catch (error) {
       console.error('Event creation error:', error);
-      alert('Ошибка создания события');
+      showToast('Ошибка создания события', 'error');
+      setShowPaymentDialog(false);
     } finally {
       setLoading(false);
     }
@@ -69,6 +76,7 @@ export const CreateEventPage = () => {
         {/* Header */}
         <div className="flex items-center gap-4 py-6 mb-8">
           <button
+            type="button"
             onClick={() => navigate('/')}
             className="p-2 hover:bg-slate-700 rounded-lg transition"
           >
@@ -103,6 +111,7 @@ export const CreateEventPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   {categories.map((cat) => (
                     <button
+                      type="button"
                       key={cat.name}
                       onClick={() => { setCategory(cat.name); setStep(2); }}
                       className={`p-4 rounded-xl border-2 transition text-center ${
@@ -154,6 +163,7 @@ export const CreateEventPage = () => {
                   <div className="grid grid-cols-3 gap-3">
                     {filters.map((f) => (
                       <button
+                        type="button"
                         key={f.value}
                         onClick={() => setFilter(f.value)}
                         className={`p-4 rounded-xl border-2 transition text-center ${
@@ -184,7 +194,10 @@ export const CreateEventPage = () => {
                 </h2>
                 <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-6">
                   <div className="text-center mb-4">
-                    <div className="text-4xl font-bold text-white mb-2">{guestCount}</div>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <div className="text-4xl font-bold text-white">{guestCount}</div>
+                      <div className="text-sm text-gray-400">гостей</div>
+                    </div>
                     <input
                       type="range"
                       min="1"
@@ -201,7 +214,10 @@ export const CreateEventPage = () => {
                 </h3>
                 <div className="bg-slate-700/50 border border-slate-600 rounded-xl p-6">
                   <div className="text-center mb-4">
-                    <div className="text-4xl font-bold text-white mb-2">{photosPerGuest}</div>
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <div className="text-4xl font-bold text-white">{photosPerGuest}</div>
+                      <div className="text-sm text-gray-400">фото/гостя</div>
+                    </div>
                     <input
                       type="range"
                       min="1"
@@ -210,6 +226,24 @@ export const CreateEventPage = () => {
                       onChange={e => setPhotosPerGuest(Number(e.target.value))}
                       className="w-full"
                     />
+                  </div>
+                </div>
+
+                {/* Price preview */}
+                <div className="bg-gradient-to-r from-indigo-500/20 to-blue-500/20 border border-indigo-500/50 rounded-xl p-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-gray-400 text-sm">Всего фото</p>
+                      <p className="text-2xl font-bold text-indigo-400">{totalPhotos}</p>
+                    </div>
+                    <div className="border-l border-r border-slate-600">
+                      <p className="text-gray-400 text-sm">Цена/фото</p>
+                      <p className="text-2xl font-bold text-blue-400">{PRICE_PER_PHOTO} ₽</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">К оплате</p>
+                      <p className="text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-400 to-blue-400 bg-clip-text">{totalPrice} ₽</p>
+                    </div>
                   </div>
                 </div>
 
@@ -261,6 +295,66 @@ export const CreateEventPage = () => {
           </form>
         </Card>
       </div>
+
+      {/* Диалог оплаты при создании события */}
+      {showPaymentDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="relative max-w-sm p-6 mx-4">
+            <button
+              type="button"
+              onClick={() => setShowPaymentDialog(false)}
+              className="absolute text-gray-400 top-4 right-4 hover:text-gray-200"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="mb-4 text-2xl font-bold text-white">Оплата за событие</h2>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between text-gray-300">
+                <span>Событие:</span>
+                <span className="font-semibold text-white">{name}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Гостей:</span>
+                <span className="font-semibold text-white">{guestCount}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Фото на гостя:</span>
+                <span className="font-semibold text-white">{photosPerGuest}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Всего фото:</span>
+                <span className="font-semibold text-indigo-400">{totalPhotos}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Цена за фото:</span>
+                <span className="font-semibold text-white">{PRICE_PER_PHOTO} ₽</span>
+              </div>
+              <div className="pt-3 border-t border-slate-600">
+                <div className="flex justify-between text-lg font-bold text-emerald-400">
+                  <span>К оплате:</span>
+                  <span>{totalPrice} ₽</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleConfirmPayment}
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? 'Обработка...' : `Оплатить ${totalPrice} ₽`}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setShowPaymentDialog(false)}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,18 +2,23 @@ import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/store/hooks';
 import { fetchPhotos, deletePhoto, deleteAllPhotos } from '../features/photosSlice/photosSlice';
-import { Button } from '../shared/ui';
+import { Button, Card } from '../shared/ui';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Info } from 'lucide-react';
+import { Info, X } from 'lucide-react';
+import { useToast } from '../shared/context/ToastContext';
 
 export const AlbumPage = () => {
   const { eventId } = useParams();
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const { photos, loading } = useAppSelector((state) => state.photos);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [selectedPhotoInfo, setSelectedPhotoInfo] = useState<{ url: string; guestName: string; uploadedAt: string } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'selected' | 'all'>('selected');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (eventId) {
@@ -53,7 +58,7 @@ export const AlbumPage = () => {
 
   const handleDownloadSelected = () => {
     if (selectedPhotos.size === 0) {
-      alert('Выберите хотя бы одно фото');
+      showToast('Выберите хотя бы одно фото', 'error');
       return;
     }
     downloadPhotos(selectedPhotos);
@@ -65,25 +70,42 @@ export const AlbumPage = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedPhotos.size === 0) {
-      alert('Выберите фото для удаления');
+      showToast('Выберите фото для удаления', 'error');
       return;
     }
-    if (confirm(`Удалить ${selectedPhotos.size} фото?`)) {
-      for (const id of selectedPhotos) {
-        await dispatch(deletePhoto(id)).unwrap();
-      }
-      setSelectedPhotos(new Set());
-      setSelectAll(false);
-      dispatch(fetchPhotos(eventId!));
-    }
+    setDeleteMode('selected');
+    setShowDeleteDialog(true);
   };
 
   const handleDeleteAll = async () => {
     if (photos.length === 0) return;
-    if (confirm(`Удалить ВСЕ фото (${photos.length})?`)) {
-      await dispatch(deleteAllPhotos(eventId!)).unwrap();
-      setSelectedPhotos(new Set());
-      setSelectAll(false);
+    setDeleteMode('all');
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteMode === 'selected') {
+        for (const id of selectedPhotos) {
+          await dispatch(deletePhoto(id)).unwrap();
+        }
+        const count = selectedPhotos.size;
+        setSelectedPhotos(new Set());
+        setSelectAll(false);
+        showToast(`✓ Удалено ${count} фото`, 'success');
+      } else {
+        await dispatch(deleteAllPhotos(eventId!)).unwrap();
+        setSelectedPhotos(new Set());
+        setSelectAll(false);
+        showToast(`✓ Удалены все фото`, 'success');
+      }
+      dispatch(fetchPhotos(eventId!));
+    } catch (error) {
+      showToast('Ошибка при удалении фото', 'error');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -97,17 +119,17 @@ export const AlbumPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-gray-600">Загрузка фото...</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-gray-400">Загрузка фото...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 bg-gray-100">
+    <div className="min-h-screen p-4 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <h1 className="text-2xl font-bold">Альбом</h1>
+          <h1 className="text-2xl font-bold text-white">Альбом</h1>
           {photos.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" onClick={handleSelectAll}>
@@ -130,8 +152,8 @@ export const AlbumPage = () => {
         </div>
 
         {photos.length === 0 ? (
-          <div className="py-12 text-center bg-white shadow-sm rounded-xl">
-            <p className="text-gray-500">Пока нет загруженных фото</p>
+          <div className="py-12 text-center bg-slate-800 border border-slate-700 shadow-sm rounded-xl">
+            <p className="text-gray-400">Пока нет загруженных фото</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -168,12 +190,48 @@ export const AlbumPage = () => {
       {/* Модальное окно с информацией о фото */}
       {selectedPhotoInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={() => setSelectedPhotoInfo(null)}>
-          <div className="w-full max-w-sm p-4 bg-white rounded-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm p-4 bg-slate-800 border border-slate-700 rounded-xl" onClick={(e) => e.stopPropagation()}>
             <img src={selectedPhotoInfo.url} alt="preview" className="object-cover w-full h-48 mb-4 rounded" />
-            <p><strong>Автор:</strong> {selectedPhotoInfo.guestName}</p>
-            <p><strong>Дата и время:</strong> {selectedPhotoInfo.uploadedAt}</p>
+            <p className="text-gray-300"><strong className="text-white">Автор:</strong> {selectedPhotoInfo.guestName}</p>
+            <p className="text-gray-300"><strong className="text-white">Дата и время:</strong> {selectedPhotoInfo.uploadedAt}</p>
             <Button onClick={() => setSelectedPhotoInfo(null)} className="w-full mt-4">Закрыть</Button>
           </div>
+        </div>
+      )}
+
+      {/* Диалог подтверждения удаления фото */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="relative max-w-sm p-6 mx-4">
+            <button
+              onClick={() => setShowDeleteDialog(false)}
+              className="absolute text-gray-400 top-4 right-4 hover:text-gray-200"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="mb-4 text-2xl font-bold text-red-400">Удалить фото?</h2>
+            <p className="mb-6 text-gray-300">
+              {deleteMode === 'selected'
+                ? `Это действие удалит ${selectedPhotos.size} выбранное фото без возможности восстановления.`
+                : `Это действие удалит все ${photos.length} фото без возможности восстановления.`}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Удалить
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteDialog(false)}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

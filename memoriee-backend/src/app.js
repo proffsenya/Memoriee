@@ -27,8 +27,24 @@ app.use('/api/events', eventRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/guest', guestRoutes);
 
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database synced');
-}).catch(err => console.error('DB error:', err));
+// Database sync with foreign key constraint handling for SQLite
+const syncDatabase = async () => {
+  try {
+    // Disable foreign keys before sync
+    await sequelize.query('PRAGMA foreign_keys = OFF');
+    
+    // Sync database schema
+    await sequelize.sync({ alter: true });
+    
+    // Re-enable foreign keys
+    await sequelize.query('PRAGMA foreign_keys = ON');
+    
+    console.log('Database synced successfully');
+  } catch (err) {
+    console.error('DB error:', err);
+  }
+};
+
+syncDatabase();
 
 module.exports = app;
