@@ -3,6 +3,7 @@ import eventReducer from '../../features/eventSlice/eventSlice';
 import photosReducer from '../../features/photosSlice/photosSlice';
 import guestSessionReducer from '../../features/guestSessionSlice/guestSessionSlice';
 import userReducer from '../../features/userSlice/userSlice';
+import filtersReducer from '../../features/filtersSlice/filtersSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     photos: photosReducer,
     guestSession: guestSessionReducer,
     user: userReducer,
+    filters: filtersReducer,
   },
 });
 

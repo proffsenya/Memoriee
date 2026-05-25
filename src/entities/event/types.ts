@@ -1,13 +1,20 @@
+import { FilterParams, Filter } from '../filter/types';
+
 export type Event = {
   id: string;
   name: string;
   date: string;
   category: string;
-  filter: string;
+  filter?: string;
+  filterId?: string;
+  filterParams?: FilterParams;
+  filters?: Filter[];
+  plan?: string;
+  extraPhotos?: number;
   photosPerGuest: number;
-  guestCount: number;     // добавлено
-  totalPhotos: number;    // добавлено
-  usedPhotos: number;     // добавлено
+  guestCount: number;
+  totalPhotos: number;
+  usedPhotos: number;
   createdAt: string;
 };
 
@@ -15,7 +22,12 @@ export type CreateEventDTO = {
   name: string;
   date: string;
   category: string;
-  filter: string;
+  filter?: string;
+  filterId?: string;
+  filterParams?: FilterParams;
+  filters?: Array<{ id: string; name: string; params: FilterParams }>;
+  plan?: string;
+  extraPhotos?: number;
   photosPerGuest: number;
   guestCount: number;
 };

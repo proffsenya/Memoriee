@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../shared/api/apiClient';
-import { Event, CreateEventDTO } from '../../entities/event/types';
+import { Event } from '../../entities/event/types';
+import { FilterParams } from '../../entities/filter/types';
 
 interface EventState {
   currentEvent: Event | null;
@@ -18,7 +19,19 @@ const initialState: EventState = {
 
 export const createEvent = createAsyncThunk(
   'event/createEvent',
-  async (dto: { name: string; date: string; category: string; filter: string; photosPerGuest: number; guestCount: number }) => {
+  async (dto: { 
+    name: string; 
+    date: string; 
+    category: string; 
+    filterId?: string;
+    filterParams?: FilterParams;
+    filter?: string;
+    filters?: Array<{ id: string; name: string; params: FilterParams }>;
+    plan?: string;
+    extraPhotos?: number;
+    photosPerGuest: number; 
+    guestCount: number 
+  }) => {
     const res = await apiClient.post('/events', dto);
     return res.data;
   }
@@ -61,13 +74,13 @@ const eventSlice = createSlice({
         state.currentEvent = action.payload;
         state.events = [action.payload, ...state.events];
       })
-      .addCase(createEvent.rejected, (state, action) => { state.loading = false; state.error = action.error.message; })
+      .addCase(createEvent.rejected, (state, action) => { state.loading = false; state.error = action.error.message ?? null; })
       .addCase(fetchEvent.pending, (state) => { state.loading = true; })
       .addCase(fetchEvent.fulfilled, (state, action) => { state.loading = false; state.currentEvent = action.payload; })
-      .addCase(fetchEvent.rejected, (state, action) => { state.loading = false; state.error = action.error.message; })
+      .addCase(fetchEvent.rejected, (state, action) => { state.loading = false; state.error = action.error.message ?? null; })
       .addCase(fetchUserEvents.pending, (state) => { state.loading = true; })
       .addCase(fetchUserEvents.fulfilled, (state, action) => { state.loading = false; state.events = action.payload; })
-      .addCase(fetchUserEvents.rejected, (state, action) => { state.loading = false; state.error = action.error.message; })
+      .addCase(fetchUserEvents.rejected, (state, action) => { state.loading = false; state.error = action.error.message ?? null; })
       .addCase(updateEvent.fulfilled, (state, action) => {
         state.currentEvent = action.payload;
         state.events = state.events.map(e => e.id === action.payload.id ? action.payload : e);

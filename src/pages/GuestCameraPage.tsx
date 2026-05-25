@@ -3,21 +3,35 @@ import { useEffect, useState, useRef } from 'react';
 import Webcam from 'react-webcam';
 import { usePhotoFilter } from '../shared/hooks/usePhotoFilter';
 import { useToast } from '../shared/context/ToastContext';
+import { FilterParams, Filter } from '../entities/filter/types';
 import apiClient from '../shared/api/apiClient';
 import { Button, Input } from '../shared/ui';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const GuestCameraPage = () => {
   const { eventId } = useParams();
   const [guestName, setGuestName] = useState('');
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [guestId, setGuestId] = useState('');
-  const [filterName, setFilterName] = useState<string>('warm');
+  const [filterParams, setFilterParams] = useState<FilterParams>({
+    filterType: 'warm',
+    brightness: 1.0,
+    contrast: 1.0,
+    saturation: 1.0,
+    hue: 0,
+    warmth: 0,
+    tint: 0,
+    fade: 0,
+    vignette: 0
+  });
+  const [filters, setFilters] = useState<Filter[]>([]); // Массив фильтров для плана
+  const [currentFilterIndex, setCurrentFilterIndex] = useState(0);
   const [eventExists, setEventExists] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const webcamRef = useRef<Webcam>(null);
-  const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterName);
+  const { applyFilter, processing: filterProcessing } = usePhotoFilter(filterParams);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -25,7 +39,18 @@ export const GuestCameraPage = () => {
       try {
         const res = await apiClient.get(`/guest/event/${eventId}`);
         setEventExists(true);
-        setFilterName(res.data.filter); // загружаем фильтр из события
+        
+        // Проверяем есть ли массив фильтров (для плана) или один filterParams
+        if (res.data.filters && res.data.filters.length > 0) {
+          // Это план с несколькими фильтрами
+          setFilters(res.data.filters);
+          setFilterParams(res.data.filters[0].params);
+          setCurrentFilterIndex(0);
+        } else if (res.data.filterParams) {
+          // Это обычное событие с одним фильтром
+          setFilterParams(res.data.filterParams);
+          setFilters([]);
+        }
 
         const storedGuestId = localStorage.getItem(`guestId_${eventId}`);
         const storedName = storedGuestId ? localStorage.getItem(`guestName_${eventId}_${storedGuestId}`) : null;
@@ -44,6 +69,20 @@ export const GuestCameraPage = () => {
     };
     if (eventId) loadEvent();
   }, [eventId]);
+
+  const handleFilterChange = (direction: 'prev' | 'next') => {
+    const maxIndex = filters.length - 1;
+    let newIndex = currentFilterIndex;
+    
+    if (direction === 'next') {
+      newIndex = currentFilterIndex === maxIndex ? 0 : currentFilterIndex + 1;
+    } else {
+      newIndex = currentFilterIndex === 0 ? maxIndex : currentFilterIndex - 1;
+    }
+    
+    setCurrentFilterIndex(newIndex);
+    setFilterParams(filters[newIndex].params);
+  };
 
   const handleSubmitName = async () => {
     if (!guestName.trim()) {
@@ -165,7 +204,18 @@ export const GuestCameraPage = () => {
       </div>
 
       {/* Bottom center camera button */}
-      <div className="absolute left-0 right-0 flex justify-center bottom-8">
+      <div className="absolute left-0 right-0 flex justify-center gap-4 bottom-8 px-4">
+        {/* Left filter button */}
+        {filters.length > 1 && (
+          <button
+            onClick={() => handleFilterChange('prev')}
+            className="w-16 h-16 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition"
+          >
+            <ChevronLeft size={24} className="text-white" />
+          </button>
+        )}
+
+        {/* Center camera button */}
         <button
           onClick={capture}
           disabled={filterProcessing || uploadLoading || remaining === 0}
@@ -174,7 +224,28 @@ export const GuestCameraPage = () => {
         >
           <div className="w-full h-full bg-white rounded-full"></div>
         </button>
+
+        {/* Right filter button */}
+        {filters.length > 1 && (
+          <button
+            onClick={() => handleFilterChange('next')}
+            className="w-16 h-16 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition"
+          >
+            <ChevronRight size={24} className="text-white" />
+          </button>
+        )}
       </div>
+
+      {/* Filter name indicator */}
+      {filters.length > 0 && (
+        <div className="absolute left-0 right-0 text-center bottom-32">
+          <div className="inline-block px-4 py-2 backdrop-blur-md bg-white/10 border border-white/20 rounded-full">
+            <p className="text-sm font-semibold text-white">
+              {filters[currentFilterIndex]?.name} ({currentFilterIndex + 1} из {filters.length})
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Bottom left status indicator */}
       <div className="absolute left-4 bottom-8 backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2">

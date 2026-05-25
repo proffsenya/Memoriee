@@ -6,9 +6,29 @@ const fs = require('fs').promises;
 
 exports.getEventForGuest = async (req, res) => {
   try {
-    const event = await Event.findByPk(req.params.eventId, { attributes: ['id', 'name', 'filter', 'photosPerGuest'] });
+    const event = await Event.findByPk(req.params.eventId, { 
+      attributes: ['id', 'name', 'filter', 'filterId', 'filterParams', 'filters', 'plan', 'photosPerGuest'] 
+    });
     if (!event) return res.status(404).json({ error: 'Event not found' });
-    res.json(event);
+    
+    // Если есть массив фильтров (план), возвращаем его
+    // Если нет - возвращаем filterParams (обычное событие)
+    const response = {
+      id: event.id,
+      name: event.name,
+      filter: event.filter,
+      filterId: event.filterId,
+      photosPerGuest: event.photosPerGuest,
+      plan: event.plan,
+    };
+    
+    if (event.filters && event.filters.length > 0) {
+      response.filters = event.filters;
+    } else {
+      response.filterParams = event.filterParams;
+    }
+    
+    res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -2,12 +2,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/store/hooks';
 import { fetchEvent, updateEvent, deleteEvent } from '../features/eventSlice/eventSlice';
+import { fetchAllFilters } from '../features/filtersSlice/filtersSlice';
+import { selectAllFilters } from '../features/filtersSlice/selectors';
+import { Filter } from '../entities/filter/types';
 import QRCode from 'qrcode';
-import { Card, Button, Input } from '../shared/ui';
+import { Card, Button, Input, FilterSelector, FilterMenu } from '../shared/ui';
 import { useToast } from '../shared/context/ToastContext';
-import { X } from 'lucide-react';
+import { X, Settings } from 'lucide-react';
 
-const PRICE_PER_PHOTO = 10;
+const PRICE_PER_PHOTO = 32;
 
 export const EventDashboardPage = () => {
   const { eventId } = useParams();
@@ -15,20 +18,43 @@ export const EventDashboardPage = () => {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
   const { currentEvent, loading, error } = useAppSelector((state) => state.event);
+  const allFilters = useAppSelector(selectAllFilters);
+  
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<Filter | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<Filter[]>([]);
   const [extraShots, setExtraShots] = useState(1);
   const [updating, setUpdating] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
 
   useEffect(() => {
     if (eventId && !currentEvent) {
       dispatch(fetchEvent(eventId));
     }
+    dispatch(fetchAllFilters());
   }, [eventId, currentEvent, dispatch]);
+
+  useEffect(() => {
+    if (currentEvent && allFilters.length > 0) {
+      // Проверяем есть ли массив фильтров (для плана)
+      if (currentEvent.filters && currentEvent.filters.length > 0) {
+        // Это план с несколькими фильтрами
+        setSelectedFilters(currentEvent.filters);
+        setSelectedFilter(null);
+      } else if (currentEvent.filterId && !selectedFilter) {
+        // Это обычное событие с одним фильтром
+        const current = allFilters.find(f => f.id === currentEvent.filterId);
+        if (current) {
+          setSelectedFilter(current);
+        }
+      }
+    }
+  }, [currentEvent, allFilters, selectedFilter]);
 
   useEffect(() => {
     if (eventId) {
@@ -46,6 +72,21 @@ export const EventDashboardPage = () => {
     }));
     setIsEditing(false);
     setUpdating(false);
+  };
+
+  const handleUpdateFilter = async (filter: Filter) => {
+    if (!currentEvent) return;
+    setSelectedFilter(filter);
+    setUpdating(true);
+    await dispatch(updateEvent({
+      eventId: currentEvent.id,
+      updates: { 
+        filterId: filter.id,
+        filterParams: filter.params
+      }
+    }));
+    setUpdating(false);
+    showToast('✅ Фильтр обновлён', 'success');
   };
 
   const handleAddShots = () => {
@@ -98,7 +139,6 @@ export const EventDashboardPage = () => {
                   <h1 className="mb-2 text-2xl font-bold text-white">{currentEvent.name}</h1>
                   <p className="text-gray-300">Дата: {new Date(currentEvent.date).toLocaleDateString()}</p>
                   <p className="text-gray-300">Категория: {currentEvent.category}</p>
-                  <p className="text-gray-300">Фильтр: {currentEvent.filter === 'warm' ? 'Тёплый' : currentEvent.filter === 'bw' ? 'Ч/Б' : 'Винтаж'}</p>
                   <p className="text-gray-300">Лимит на гостя: {currentEvent.photosPerGuest} фото</p>
                   <p className="text-gray-300">Количество гостей: {currentEvent.guestCount ?? 0}</p>
                   <p className="text-gray-300">Всего фото: {currentEvent.usedPhotos ?? 0} / {currentEvent.totalPhotos ?? (currentEvent.guestCount * currentEvent.photosPerGuest)}</p>
@@ -111,6 +151,51 @@ export const EventDashboardPage = () => {
                   }}>Редактировать</Button>
                   <Button variant="secondary" onClick={handleDeleteEvent} className="bg-red-600 hover:bg-red-700">Удалить событие</Button>
                 </div>
+              </div>
+
+              {/* Блок фильтра */}
+              <div className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-white flex items-center gap-2">
+                    <span>🎨</span> Выберите фильтр
+                  </h3>
+                  <button
+                    onClick={() => setShowFilterMenu(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition flex items-center gap-2"
+                  >
+                    <Settings size={16} />
+                    Все фильтры
+                  </button>
+                </div>
+                
+                {selectedFilters.length > 0 ? (
+                  // Для плана показываем несколько фильтров
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-400">Фильтры события:</div>
+                    {selectedFilters.map((filter, index) => (
+                      <div key={index} className="p-2 rounded bg-slate-600/50 border border-slate-500">
+                        <div className="font-medium text-white">{index + 1}. {filter.name}</div>
+                        {filter.description && (
+                          <div className="text-xs text-gray-400">{filter.description}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : selectedFilter ? (
+                  // Для обычного события показываем один фильтр
+                  <>
+                    <div className="mb-2 text-white font-medium">{selectedFilter.name}</div>
+                    {selectedFilter.description && (
+                      <div className="text-sm text-gray-400 mb-2">{selectedFilter.description}</div>
+                    )}
+                    <FilterSelector
+                      onSelectFilter={handleUpdateFilter}
+                      currentFilterId={selectedFilter?.id}
+                    />
+                  </>
+                ) : (
+                  <div className="text-gray-400">Выберите фильтр</div>
+                )}
               </div>
 
               {/* Блок докупки лимита */}
@@ -253,6 +338,12 @@ export const EventDashboardPage = () => {
           </Card>
         </div>
       )}
+
+      {/* Filter Menu Modal */}
+      <FilterMenu 
+        isOpen={showFilterMenu}
+        onClose={() => setShowFilterMenu(false)}
+      />
     </div>
   );
 };

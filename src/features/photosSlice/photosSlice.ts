@@ -39,7 +39,7 @@ const photosSlice = createSlice({
     builder
       .addCase(fetchPhotos.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchPhotos.fulfilled, (state, action) => { state.loading = false; state.photos = action.payload; })
-      .addCase(fetchPhotos.rejected, (state, action) => { state.loading = false; state.error = action.error.message; })
+      .addCase(fetchPhotos.rejected, (state, action) => { state.loading = false; state.error = action.error.message || 'Error'; })
       .addCase(deletePhoto.fulfilled, (state, action) => {
         state.photos = state.photos.filter(p => p.id !== action.payload);
       })

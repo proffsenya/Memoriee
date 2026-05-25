@@ -9,13 +9,16 @@ export const mockBackend = {
   createEvent: (dto: CreateEventDTO): Event => {
     const events: Event[] = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
     const newEvent: Event = {
-    id: crypto.randomUUID(),
-    name: dto.name,
-    date: dto.date,
-    category: dto.category,
-    photosPerGuest: dto.photosPerGuest,
-    filter: dto.filter,
-    createdAt: new Date().toISOString(),
+      id: crypto.randomUUID(),
+      name: dto.name,
+      date: dto.date,
+      category: dto.category,
+      photosPerGuest: dto.photosPerGuest,
+      filter: dto.filter,
+      createdAt: new Date().toISOString(),
+      guestCount: 0,
+      totalPhotos: 0,
+      usedPhotos: 0,
     };
     events.push(newEvent);
     localStorage.setItem(EVENTS_KEY, JSON.stringify(events));

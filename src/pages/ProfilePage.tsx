@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../app/store/hooks';
 import { logout } from '../features/userSlice/userSlice';
-import { Button, Card } from '../shared/ui';
+import { Card } from '../shared/ui';
 import { User, LogOut, Mail } from 'lucide-react';
 
 export const ProfilePage = () => {

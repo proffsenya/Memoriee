@@ -8,10 +8,37 @@ const Event = sequelize.define('Event', {
   date: { type: DataTypes.DATEONLY, allowNull: false },
   category: { type: DataTypes.STRING, allowNull: false },
   filter: { type: DataTypes.ENUM('warm', 'bw', 'vintage'), defaultValue: 'warm' },
+  filterId: { type: DataTypes.STRING, defaultValue: 'warm' },
+  filterParams: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      filterType: 'warm',
+      brightness: 1.0,
+      contrast: 1.05,
+      saturation: 1.1,
+      hue: 0,
+      warmth: 15,
+      tint: 5,
+      fade: 0,
+      vignette: 0
+    }
+  },
+  filters: {
+    type: DataTypes.JSON,
+    defaultValue: null
+  },
+  plan: {
+    type: DataTypes.STRING,
+    defaultValue: null
+  },
+  extraPhotos: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   photosPerGuest: { type: DataTypes.INTEGER, defaultValue: 30 },
-  guestCount: { type: DataTypes.INTEGER, allowNull: false },      // сколько гостей планируется
-  totalPhotos: { type: DataTypes.INTEGER, allowNull: false },     // guestCount * photosPerGuest
-  usedPhotos: { type: DataTypes.INTEGER, defaultValue: 0 },       // сколько уже загружено
+  guestCount: { type: DataTypes.INTEGER, allowNull: false },
+  totalPhotos: { type: DataTypes.INTEGER, allowNull: false },
+  usedPhotos: { type: DataTypes.INTEGER, defaultValue: 0 },
   userId: { type: DataTypes.UUID, references: { model: User, key: 'id' } },
 }, { timestamps: true });
 

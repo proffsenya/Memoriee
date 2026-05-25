@@ -5,6 +5,7 @@ import { fetchMe } from '../../features/userSlice/userSlice';
 import { SplashScreen } from '../../pages/SplashScreen';
 import { AdaptiveLayout } from '../Layout/AdaptiveLayout';
 import { LandingPage } from '../../pages/LandingPage';
+import { PricingPage } from '../../pages/PricingPage';
 import { CreateEventPage } from '../../pages/CreateEventPage';
 import { EventDashboardPage } from '../../pages/EventDashboardPage';
 import { GuestCameraPage } from '../../pages/GuestCameraPage';
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
     element: <AdaptiveLayout />,
     children: [
       { path: '/', element: <PrivateRoute><LandingPage /></PrivateRoute> },
+      { path: '/pricing', element: <PrivateRoute><PricingPage /></PrivateRoute> },
       { path: '/create-event', element: <PrivateRoute><CreateEventPage /></PrivateRoute> },
       { path: '/event/:eventId/dashboard', element: <PrivateRoute><EventDashboardPage /></PrivateRoute> },
       { path: '/album/:eventId', element: <PrivateRoute><AlbumPage /></PrivateRoute> },

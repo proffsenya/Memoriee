@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const photoRoutes = require('./routes/photoRoutes');
 const guestRoutes = require('./routes/guestRoutes');
+const filterRoutes = require('./routes/filterRoutes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/guest', guestRoutes);
+app.use('/api/filters', filterRoutes);
 
 // Database sync with foreign key constraint handling for SQLite
 const syncDatabase = async () => {

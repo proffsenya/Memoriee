@@ -1,12 +1,15 @@
 // src/app/Layout/AdaptiveLayout.tsx
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, LogOut } from 'lucide-react';
+import { Home, Calendar, User, LogOut, Sliders, Tag } from 'lucide-react';
 import { useMediaQuery } from '../../shared/hooks/useMediaQuery';
 import { useAppDispatch } from '../store/hooks';
 import { logoutUser } from '../../features/userSlice/userSlice';
+import { useFilterMenu } from '../../shared/context/FilterMenuContext';
+import { FilterMenu } from '../../shared/ui';
 
 const navItems = [
   { path: '/', label: 'Главная', icon: Home },
+  { path: '/pricing', label: 'Тарифы', icon: Tag },
   { path: '/history', label: 'История', icon: Calendar },
   { path: '/profile', label: 'Профиль', icon: User },
 ];
@@ -15,6 +18,7 @@ export const AdaptiveLayout = () => {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const location = useLocation();
   const dispatch = useAppDispatch();
+  const { isFilterMenuOpen, openFilterMenu, closeFilterMenu } = useFilterMenu();
   const isGuestPage = location.pathname.startsWith('/guest/');
 
   const handleLogout = () => {
@@ -54,6 +58,13 @@ export const AdaptiveLayout = () => {
                 <span>{label}</span>
               </NavLink>
             ))}
+            <button
+              onClick={openFilterMenu}
+              className="flex items-center gap-3 px-6 py-3 w-full text-gray-300 hover:text-white hover:bg-slate-700/50 transition rounded-r-lg"
+            >
+              <Sliders size={20} />
+              <span>Фильтры</span>
+            </button>
           </nav>
 
           <div className="absolute bottom-6 left-6 right-6">
@@ -68,7 +79,7 @@ export const AdaptiveLayout = () => {
         </aside>
       )}
 
-      <main className={isDesktop ? 'ml-64' : ''}>
+      <main className={isDesktop ? 'ml-64' : 'pb-20'}>
         <div className="container px-4 py-6 mx-auto max-w-7xl">
           <Outlet />
         </div>
@@ -92,6 +103,13 @@ export const AdaptiveLayout = () => {
               </NavLink>
             ))}
             <button
+              onClick={openFilterMenu}
+              className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition text-gray-400 hover:text-gray-300"
+            >
+              <Sliders size={24} />
+              <span className="text-xs">Фильтры</span>
+            </button>
+            <button
               onClick={handleLogout}
               className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition text-gray-400 hover:text-red-400"
             >
@@ -101,6 +119,8 @@ export const AdaptiveLayout = () => {
           </div>
         </div>
       )}
+
+      <FilterMenu isOpen={isFilterMenuOpen} onClose={closeFilterMenu} />
     </div>
   );
 };
