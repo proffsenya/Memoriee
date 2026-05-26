@@ -6,6 +6,7 @@ import { useAppDispatch } from '../store/hooks';
 import { logoutUser } from '../../features/userSlice/userSlice';
 import { useFilterMenu } from '../../shared/context/FilterMenuContext';
 import { FilterMenu } from '../../shared/ui';
+import logoImage from '../../shared/logo.png';
 
 const navItems = [
   { path: '/', label: 'Главная', icon: Home },
@@ -36,9 +37,7 @@ export const AdaptiveLayout = () => {
         <aside className="fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700 shadow-2xl">
           <div className="p-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
-                <span className="text-xl">📸</span>
-              </div>
+              <img src={logoImage} alt="Memoriee" className="w-16 h-16" />
               <h1 className="text-2xl font-bold text-white">Memoriee</h1>
             </div>
             <p className="text-sm text-gray-400">Ваши воспоминания</p>

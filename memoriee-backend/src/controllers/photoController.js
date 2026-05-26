@@ -8,9 +8,9 @@ exports.getEventPhotos = async (req, res) => {
     const event = await Event.findOne({ where: { id: req.params.eventId, userId: req.userId } });
     if (!event) return res.status(404).json({ error: 'Event not found' });
     const photos = await Photo.findAll({ where: { eventId: req.params.eventId }, order: [['createdAt', 'ASC']] });
-    // преобразуем url в полный путь для клиента
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const photosWithUrl = photos.map(p => ({ ...p.toJSON(), url: `${baseUrl}/${p.url}` }));
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+    const host = req.get('host');
+    const photosWithUrl = photos.map(p => ({ ...p.toJSON(), url: `${protocol}://${host}/${p.url}` }));
     res.json(photosWithUrl);
   } catch (err) {
     res.status(500).json({ error: err.message });

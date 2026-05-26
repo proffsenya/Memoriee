@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Camera } from 'lucide-react';
+import logoImage from '../shared/logo.png';
 
 export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [isVisible, setIsVisible] = useState(true);
@@ -26,8 +26,8 @@ export const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-8">
         {/* Logo area with animation */}
-        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 shadow-2xl animate-bounce">
-          <Camera size={40} className="text-white" />
+        <div className="flex items-center justify-center w-32 h-32 animate-bounce">
+          <img src={logoImage} alt="Memoriee" className="w-32 h-32" />
         </div>
 
         {/* App name */}

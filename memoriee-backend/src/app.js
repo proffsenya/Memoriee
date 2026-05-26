@@ -12,15 +12,43 @@ const filterRoutes = require('./routes/filterRoutes');
 
 const app = express();
 
-// Полностью открытый CORS (только для разработки!)
+
+// HTTPS redirect for production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      res.redirect(`https://${req.header('host')}${req.url}`);
+    } else {
+      next();
+    }
+  });
+}
+
+// CORS configuration
+const allowedOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 app.use(cors({
-  origin: true,        // разрешить любой источник
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
+
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);

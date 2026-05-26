@@ -7,6 +7,7 @@ import { FilterParams, Filter } from '../entities/filter/types';
 import apiClient from '../shared/api/apiClient';
 import { Button, Input } from '../shared/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateUUID } from '../shared/lib/uuid';
 
 export const GuestCameraPage = () => {
   const { eventId } = useParams();
@@ -91,7 +92,7 @@ export const GuestCameraPage = () => {
     }
     let newGuestId = localStorage.getItem(`guestId_${eventId}`);
     if (!newGuestId) {
-      newGuestId = crypto.randomUUID();
+      newGuestId = generateUUID();
       localStorage.setItem(`guestId_${eventId}`, newGuestId);
     }
     setGuestId(newGuestId);

@@ -63,8 +63,10 @@ exports.uploadGuestPhoto = async (req, res) => {
     await usage.update({ count: usage.count + 1 });
     await event.update({ usedPhotos: event.usedPhotos + 1 });
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    res.status(201).json({ ...photo.toJSON(), url: `${baseUrl}/${fileUrl}` });
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+    const host = req.get('host');
+    const fullUrl = `${protocol}://${host}/${fileUrl}`;
+    res.status(201).json({ ...photo.toJSON(), url: fullUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

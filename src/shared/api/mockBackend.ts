@@ -1,5 +1,6 @@
 import { Event, CreateEventDTO } from '../../entities/event/types';
 import { Photo } from '../../entities/photo/types';
+import { generateUUID } from '../lib/uuid';
 
 const EVENTS_KEY = 'memoriee_events';
 const PHOTOS_KEY = 'memoriee_photos';
@@ -9,7 +10,7 @@ export const mockBackend = {
   createEvent: (dto: CreateEventDTO): Event => {
     const events: Event[] = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
     const newEvent: Event = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: dto.name,
       date: dto.date,
       category: dto.category,
@@ -46,7 +47,7 @@ addPhoto: async (eventId: string, guestId: string, photoBlob: Blob): Promise<Pho
   });
   const photos: Photo[] = JSON.parse(localStorage.getItem(PHOTOS_KEY) || '[]');
   const newPhoto: Photo = {
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     eventId,
     url: base64,
     uploadedAt: new Date().toISOString(),
